@@ -1,0 +1,28 @@
+# Virtual environment (everyone creates their own with pip install)
+.venv/
+venv/
+
+# ChromaDB database (your documents' text lives here)
+data/chroma/
+
+# Uploaded PDFs (company documents should never go on GitHub)
+*.pdf
+data/uploads/
+
+# Secrets and passwords
+.env
+.env.*
+*.key
+*.pem
+secrets.toml
+.streamlit/secrets.toml
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Editor and system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
