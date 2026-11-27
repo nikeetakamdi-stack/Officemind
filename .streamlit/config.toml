@@ -1,12 +1,16 @@
 # Streamlit settings for OfficeMind (read when you run "streamlit run app.py" from this folder)
 
 [theme]
-base = "dark"
-primaryColor = "#7C5CFF"            # violet accent for buttons, links, focus
-backgroundColor = "#0B0F19"         # page background
-secondaryBackgroundColor = "#131A2A" # sidebar, inputs
-textColor = "#E5E7EB"
+base = "light"
+primaryColor = "#1F4FB5"              # OfficeMind deep blue
+backgroundColor = "#F4F6F9"           # page background (soft grey)
+secondaryBackgroundColor = "#F7F8FA"  # inputs and other light surfaces
+textColor = "#1A1D23"
 font = "sans serif"
+baseRadius = "8px"
+
+[theme.sidebar]
+backgroundColor = "#FFFFFF"
 
 [client]
 showSidebarNavigation = false  # we draw our own sidebar menu with icons (core/ui.py)

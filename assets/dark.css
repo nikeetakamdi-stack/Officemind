@@ -1,0 +1,103 @@
+/* =====================================================================
+   OfficeMind dark mode. Loaded after style.css only when the user turns
+   on "Dark mode" in the profile menu. It changes the token values, then
+   recolours the few Streamlit widgets that don't use our tokens.
+   ===================================================================== */
+
+:root {
+  --brand: #5B8DEF;
+  --brand-hover: #3D6FDB;
+  --brand-soft: rgba(91, 141, 239, 0.14);
+  --brand-soft-2: rgba(91, 141, 239, 0.28);
+  --brand-text: #8DB0F5;
+  --primary-btn: #3D6FDB;
+  --on-brand: #FFFFFF;
+
+  --bg: #111418;
+  --surface: #191D23;
+  --surface-2: #1F242B;
+  --surface-3: #272D36;
+  --border: #2C333D;
+  --border-strong: #3B4350;
+  --text: #E6E9EE;
+  --text-2: #C2C8D0;
+  --muted: #8F99A6;
+
+  --red-bg: rgba(240, 68, 56, 0.14);   --red-border: rgba(240, 68, 56, 0.38);   --red-text: #FDA29B;
+  --amber-bg: rgba(247, 144, 9, 0.13); --amber-border: rgba(247, 144, 9, 0.38); --amber-text: #FEC84B;
+  --green-bg: rgba(23, 178, 106, 0.13); --green-border: rgba(23, 178, 106, 0.38); --green-text: #75E0A7;
+  --blue-bg: rgba(91, 141, 239, 0.14); --blue-border: rgba(91, 141, 239, 0.38); --blue-text: #8DB0F5;
+  --grey-bg: rgba(255, 255, 255, 0.06); --grey-border: rgba(255, 255, 255, 0.12); --grey-text: #C2C8D0;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 8px 20px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+/* Text that Streamlit colours itself */
+.stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4,
+[data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"],
+[data-testid="stCheckbox"] p, [data-testid="stExpander"] summary, [role="tab"] p {
+  color: var(--text);
+}
+[data-testid="stCaptionContainer"] { color: var(--muted) !important; }
+
+/* Sidebar */
+[data-testid="stSidebar"], [data-testid="stSidebarContent"] { background: var(--surface); }
+
+/* Text boxes, dropdowns and text areas */
+[data-testid="stTextInputRootElement"], [data-testid="stTextAreaRootElement"],
+[data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"] {
+  border-color: var(--border-strong) !important;
+  background: var(--surface-2) !important;
+}
+[data-testid="stTextInputRootElement"] input, [data-testid="stTextAreaRootElement"] textarea, [data-testid="stSelectbox"] [role="group"] div,
+[data-testid="stChatInput"] textarea {
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text);
+}
+input::placeholder, textarea::placeholder { color: var(--muted) !important; -webkit-text-fill-color: var(--muted); }
+[data-testid="stTextInputRootElement"] input, [data-testid="stTextAreaRootElement"] textarea {
+  background: transparent !important;
+}
+.st-key-topbar [data-testid="stTextInputRootElement"] { background: var(--surface-2) !important; }
+
+/* Icons drawn by Streamlit take the colour of the text around them */
+[data-testid="stIconMaterial"] { color: inherit !important; }
+[data-testid="stPageLink"] a, [data-testid="stPageLink"] p { color: var(--text-2); }
+[class*="st-key-card_"] [data-testid="stPageLink"] a, [class*="st-key-card_"] [data-testid="stPageLink"] p,
+[class*="st-key-navactive_"] [data-testid="stPageLink"] a, [class*="st-key-navactive_"] [data-testid="stPageLink"] p {
+  color: var(--brand-text) !important;
+}
+[role="listbox"], [role="menu"] { background: var(--surface-2) !important; }
+[role="option"] { color: var(--text) !important; }
+[role="option"]:hover, [role="option"][aria-selected="true"] { background: var(--surface-3) !important; }
+[data-testid="stMultiSelect"] [role="group"] span[title] { background: var(--brand-soft) !important; color: var(--text) !important; }
+
+/* Buttons */
+[data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-secondaryFormSubmit"],
+[data-testid="stPopoverButton"], [data-testid="stButtonGroup"] button {
+  border-color: var(--border-strong) !important;
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+[data-testid="stButtonGroup"] button[kind*="Active"], [data-testid="stButtonGroup"] button[aria-checked="true"] {
+  border-color: var(--brand) !important;
+  background: var(--brand-soft) !important;
+  color: var(--brand-text) !important;
+}
+[data-testid="stBaseButton-tertiary"] { background: transparent !important; }
+
+/* Chat */
+[data-testid="stChatInput"], [data-testid="stChatInput"] > div { background: var(--surface) !important; }
+[data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background: var(--bg) !important; }
+
+/* File uploader, expanders, popovers, toasts */
+[data-testid="stFileUploaderDropzone"] { background: var(--surface-2); }
+[data-testid="stFileUploaderDropzone"] * { color: var(--text-2); }
+[data-testid="stExpander"] details { background: var(--surface-2); }
+[data-testid="stPopoverBody"] { background: var(--surface) !important; }
+[data-testid="stToast"] { background: var(--surface-2) !important; color: var(--text) !important; }
+
+/* Alerts keep their colour but get readable text */
+[data-testid="stAlert"] p { color: var(--text) !important; }

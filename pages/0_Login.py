@@ -3,16 +3,18 @@
 import streamlit as st
 
 from core.auth import count_users, log_in, sign_up
-from core.ui import apply_style, current_user, lottie
+from core.ui import LOGO_PNG, apply_style, brand_html, current_user, icon
 
-st.set_page_config(page_title="Log in · OfficeMind", page_icon="🧠", layout="centered")
+st.set_page_config(page_title="Sign in · OfficeMind", page_icon=LOGO_PNG, layout="wide")
 apply_style()
 
-# No sidebar on this page: there is nothing to open until you log in
+# No sidebar and no top bar on this page: there is nothing to open until you sign in
 st.markdown(
     """
     <style>
-      [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] { display: none; }
+      [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
+      [data-testid="stExpandSidebarButton"] { display: none; }
+      [data-testid="stMainBlockContainer"] { max-width: 1120px; padding-top: 3rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -29,28 +31,49 @@ def start_session(user: dict) -> None:
     st.switch_page("app.py")
 
 
-# ---------- Header ----------
-lottie("welcome.json", height=120, key="login_animation")
-st.markdown(
-    """
-    <div class="om-auth-header">
-      <div class="om-auth-title"><span class="om-gradient">OfficeMind</span></div>
-      <p>Your private AI workplace assistant</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+FEATURES = [
+    ("menu_book", "Knowledge Assistant", "Answers from your company documents, with sources."),
+    ("support_agent", "Smart Helpdesk", "AI suggests the category, urgency and a possible fix."),
+    ("task_alt", "Guided onboarding", "Checklists that help new people settle in fast."),
+]
 
-# ---------- Card with two tabs ----------
-with st.container(key="auth_card"):
-    login_tab, signup_tab = st.tabs(["Log in", "Sign up"])
+brand_column, form_column = st.columns([1.05, 1], gap="large")
+
+# ---------- Left: brand panel ----------
+with brand_column:
+    features = "".join(
+        f'<div class="om-login-feature">{icon(name)}<div><strong>{title}</strong>'
+        f"<small>{text}</small></div></div>"
+        for name, title, text in FEATURES
+    )
+    st.markdown(
+        f"""
+        <div class="om-login-brand">
+          {brand_html(size=36, tag=False)}
+          <div class="om-login-headline">Your private AI workplace assistant</div>
+          <p class="om-login-text">Everything runs on your own computer: your documents and
+          conversations never leave it.</p>
+          {features}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ---------- Right: sign-in card with two tabs ----------
+with form_column, st.container(key="auth_card"):
+    st.markdown(
+        '<div class="om-auth-title">Welcome</div>'
+        '<p class="om-auth-sub">Sign in to your account, or create one.</p>',
+        unsafe_allow_html=True,
+    )
+    login_tab, signup_tab = st.tabs(["Sign in", "Create account"])
 
     with login_tab:
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="e.g. priya.sharma")
             password = st.text_input("Password", type="password")
             log_in_clicked = st.form_submit_button(
-                "Log in", type="primary", icon=":material/login:", width="stretch"
+                "Sign in", type="primary", icon=":material/login:", width="stretch"
             )
         if log_in_clicked:
             with st.spinner("Checking..."):
@@ -58,7 +81,10 @@ with st.container(key="auth_card"):
             if user:
                 start_session(user)
             else:
-                st.error("Wrong username or password.", icon=":material/error:")
+                st.error(
+                    "That username and password don't match. Check them and try again.",
+                    icon=":material/error:",
+                )
 
     with signup_tab:
         if count_users() == 0:

@@ -2,6 +2,17 @@
 
 An AI workplace assistant that runs entirely on your own computer. No data leaves your machine and no paid API is needed.
 
+## Design
+
+A professional, enterprise-style interface with OfficeMind's own logo (a deep-blue tile with a white "O" and a light-blue spark).
+- Clean light theme by default, with a **Dark mode** switch in the profile menu.
+- One brand colour (deep blue `#1F4FB5`) with neutral greys, the Inter / Segoe UI font, and a clear text-size hierarchy.
+- A top bar with the logo, a **search box** (tickets, documents, onboarding tasks, pages), a **notification bell** and a **profile menu**.
+- A collapsible sidebar with an icon for each page; the current page is highlighted.
+- Cards, buttons, forms, tables, badges and charts share one design system in `assets/style.css` (dark colours in `assets/dark.css`).
+- Subtle motion only: page fade-in, hover effects and grey "skeleton" placeholders while things load.
+- Friendly empty states and plain-language error messages.
+
 ## What it does
 
 **Knowledge Assistant** (Phase 1, Step 1)
@@ -92,23 +103,25 @@ Your browser opens at http://localhost:8501. Click **Knowledge Assistant**, uplo
 
 ```
 officemind/
-├── app.py                         home page (welcome screen)
-├── .streamlit/config.toml         dark theme colours
+├── app.py                         home page (greeting, quick stats, shortcuts)
+├── .streamlit/config.toml         light theme and brand colour
 ├── assets/
-│   ├── style.css                  the look: cards, chat bubbles, animations
-│   └── welcome.json               the Lottie welcome animation
+│   ├── style.css                  the design system: colours, cards, tables, badges, motion
+│   ├── dark.css                   dark mode colours
+│   └── logo.png                   OfficeMind logo (browser tab icon)
 ├── pages/
 │   ├── 0_Login.py                 login + sign-up page
 │   ├── 1_Knowledge_Assistant.py   upload + chat page
 │   ├── 2_Helpdesk.py              tickets page
 │   ├── 3_Onboarding.py            checklists, progress and assistant
-│   └── 4_Dashboard.py             manager dashboard (admins only)
+│   ├── 4_Dashboard.py             manager dashboard (admins only)
+│   └── 5_Search.py                search results (opened from the top bar)
 ├── core/                          shared code every module uses
 │   ├── auth.py                    sign up, log in, password hashing
 │   ├── config.py                  all settings (models, chunk size, ...)
 │   ├── database.py                opens the SQLite user database
 │   ├── llm.py                     talks to Ollama
-│   ├── ui.py                      shared styles, sidebar menu, typing effect
+│   ├── ui.py                      page shell (top bar, sidebar) and shared building blocks
 │   └── vector_store.py            opens the ChromaDB database
 ├── modules/
 │   ├── knowledge/
@@ -120,8 +133,11 @@ officemind/
 │   ├── helpdesk/
 │   │   ├── tickets.py             create, list, update and reply to tickets
 │   │   └── ai.py                  category/urgency, similar tickets, possible fix
-│   └── onboarding/
-│       └── checklists.py          checklists, tasks, assignments and progress
+│   ├── onboarding/
+│   │   └── checklists.py          checklists, tasks, assignments and progress
+│   ├── home.py                    quick stats for the home page
+│   ├── notifications.py           what the notification bell shows
+│   └── search.py                  the search box
 ├── data/                          the database is saved here (not uploaded to GitHub)
 └── requirements.txt               Python packages to install
 ```

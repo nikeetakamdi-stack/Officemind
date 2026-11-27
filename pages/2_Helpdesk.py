@@ -10,12 +10,13 @@ import streamlit as st
 
 from core.config import TICKET_CATEGORIES
 from core.ui import (
-    apply_style,
-    is_admin,
-    require_login,
-    sidebar_menu,
+    AI_OFFLINE,
+    empty_state,
+    icon,
+    page_setup,
+    skeleton_html,
+    stat_cards,
     status_badge,
-    thinking_html,
     urgency_tag,
 )
 from modules.helpdesk.ai import analyze_ticket
@@ -31,24 +32,13 @@ from modules.helpdesk.tickets import (
     update_status,
 )
 
-st.set_page_config(page_title="Helpdesk · OfficeMind", page_icon="🎧")
-apply_style()
-user = require_login()  # not logged in? -> login page
-sidebar_menu()
-admin = is_admin()
-
-subtitle = (
+user = page_setup(
+    "pages/2_Helpdesk.py", "Helpdesk", "support_agent",
     "Every ticket from your team. Update the status and reply to keep people informed."
-    if admin
-    else "Having a problem? Raise a ticket and follow its progress here."
+    if (st.session_state.get("user") or {}).get("role") == "admin"
+    else "Having a problem? Raise a ticket and follow its progress here.",
 )
-st.markdown(
-    f"""
-    <div class="om-page-title">🎧 <span class="om-gradient">Helpdesk</span></div>
-    <p class="om-page-subtitle">{subtitle}</p>
-    """,
-    unsafe_allow_html=True,
-)
+admin = user["role"] == "admin"
 
 # A message saved before the page refreshed (e.g. "Ticket #4 created")
 if "helpdesk_message" in st.session_state:
@@ -60,12 +50,12 @@ def ticket_header(ticket: dict) -> None:
     """Top of a ticket card: number, title, status badge and small details."""
     by = f" · by {html.escape(ticket['author'])}" if admin else ""
     replies = ticket["reply_count"]
-    reply_text = f" · 💬 {replies} repl{'y' if replies == 1 else 'ies'}" if replies else ""
+    reply_text = f" · {icon('chat_bubble', 14)} {replies} repl{'y' if replies == 1 else 'ies'}" if replies else ""
 
     # Urgency tag. ✨ = the AI suggested it and the employee kept it.
     urgency, ai_urgency = ticket["urgency"], ticket["ai_urgency"]
     if ai_urgency == urgency:
-        label, hover = f"✨ {URGENCIES[urgency]}", "Suggested by the AI"
+        label, hover = f"{URGENCIES[urgency]} · AI", "Suggested by the AI and kept by the employee"
     elif ai_urgency:
         label = URGENCIES[urgency]
         hover = f"AI suggested {URGENCIES[ai_urgency]}; the employee chose {URGENCIES[urgency]}"
@@ -166,10 +156,6 @@ def show_ticket(ticket: dict) -> None:
                 admin_controls(ticket)
 
 
-def empty_state(text: str) -> None:
-    st.markdown(f'<div class="om-empty-state">{text}</div>', unsafe_allow_html=True)
-
-
 # ---------- Raising a ticket (employees): step 1 describe, step 2 review ----------
 # While a ticket is being written, it is kept in st.session_state["ticket_draft"]:
 # {"title", "description", "analysis" (the AI's results), "step": "describe" or "review"}
@@ -197,7 +183,7 @@ def describe_step() -> None:
             "Check with AI", type="primary", icon=":material/auto_awesome:", width="stretch"
         )
     st.caption(
-        "✨ The AI suggests a category and urgency, checks for similar tickets and looks for "
+        "The AI suggests a category and urgency, checks for similar tickets and looks for "
         "a possible fix. You can change everything before you submit."
     )
 
@@ -206,8 +192,9 @@ def describe_step() -> None:
         if error:
             st.error(error, icon=":material/error:")
             return
-        spot = st.empty()
-        spot.markdown(thinking_html("The AI is reading your ticket…"), unsafe_allow_html=True)
+        spot = st.empty()  # grey "loading" card while the AI works
+        spot.markdown(skeleton_html(lines=4, label="The AI is reading your ticket…"),
+                      unsafe_allow_html=True)
         analysis = analyze_ticket(title.strip(), description.strip())
         spot.empty()
         st.session_state[DRAFT] = {
@@ -229,7 +216,7 @@ def similar_card(similar: list[dict]) -> None:
     st.markdown(
         f"""
         <div class="om-ai-card om-ai-similar">
-          <div class="om-ai-title">⚠️ Similar issue already reported</div>
+          <div class="om-ai-title">{icon("warning")} Similar issue already reported</div>
           <ul class="om-ai-list">{items}</ul>
           <p>If this is the same problem, the IT team is already working on it,
           so you may not need a new ticket.</p>
@@ -251,7 +238,7 @@ def fix_card(fix: dict) -> None:
     st.markdown(
         f"""
         <div class="om-ai-card om-ai-fix">
-          <div class="om-ai-title">💡 Possible fix: try this first</div>
+          <div class="om-ai-title">{icon("lightbulb")} Possible fix: try this first</div>
           {steps_html}
           <div class="om-ai-based">Based on</div>
           {evidence}
@@ -274,8 +261,9 @@ def review_step(draft: dict) -> None:
             unsafe_allow_html=True,
         )
 
-    for problem in analysis["problems"]:
-        st.warning(f"{problem} Is Ollama running?", icon=":material/warning:")
+    if analysis["problems"]:
+        st.warning(f"{AI_OFFLINE[0]}, so some suggestions are missing. {AI_OFFLINE[1]} "
+                   "You can still submit the ticket.", icon=":material/warning:")
     if analysis["similar"]:
         similar_card(analysis["similar"])
     if analysis["fix"]:
@@ -289,17 +277,17 @@ def review_step(draft: dict) -> None:
             "Category",
             TICKET_CATEGORIES,
             index=TICKET_CATEGORIES.index(ai_category),
-            format_func=lambda c: f"{c}  ✨ AI suggestion" if c == ai_category else c,
+            format_func=lambda c: f"{c} (AI suggestion)" if c == ai_category else c,
         )
         urgency = right.selectbox(
             "Urgency",
             urgency_keys,
             index=urgency_keys.index(ai_urgency),
             format_func=lambda u: (
-                f"{URGENCIES[u]}  ✨ AI suggestion" if u == ai_urgency else URGENCIES[u]
+                f"{URGENCIES[u]} (AI suggestion)" if u == ai_urgency else URGENCIES[u]
             ),
         )
-        st.caption("✨ Suggested by the AI. Change them if they're not right.")
+        st.caption("Suggested by the AI. Change them if they're not right.")
         submit_label = "Submit anyway" if analysis["similar"] else "Submit ticket"
         submitted = st.form_submit_button(
             submit_label, type="primary", icon=":material/send:", width="stretch"
@@ -332,15 +320,14 @@ tickets = list_tickets(user)
 # ---------- Admin view ----------
 if admin:
     counts = {key: sum(t["status"] == key for t in tickets) for key in STATUSES}
-    st.markdown(
-        '<div class="om-stats">'
-        + "".join(
-            f'<div class="om-stat om-stat-{key}"><span>{counts[key]}</span>{label}</div>'
-            for key, label in STATUSES.items()
-        )
-        + "</div>",
-        unsafe_allow_html=True,
-    )
+    stat_cards([
+        {"icon": "radio_button_unchecked", "label": "Open", "value": counts["open"],
+         "note": "waiting to be picked up", "tone": "red" if counts["open"] else "brand"},
+        {"icon": "progress_activity", "label": "In Progress", "value": counts["in_progress"],
+         "note": "being worked on", "tone": "amber" if counts["in_progress"] else "brand"},
+        {"icon": "check_circle", "label": "Closed", "value": counts["closed"],
+         "note": "solved", "tone": "green"},
+    ])
 
     # Filter buttons: All / Open / In Progress / Closed
     choice = st.segmented_control(
@@ -353,15 +340,15 @@ if admin:
     shown = [t for t in tickets if choice in (None, "all") or t["status"] == choice]
 
     if not tickets:
-        empty_state("🎉 No tickets yet. When employees raise one, it will appear here.")
+        empty_state("inbox", "No tickets yet", "When employees raise a ticket, it will appear here.")
     elif not shown:
-        empty_state("No tickets with this status.")
+        empty_state("filter_alt_off", "No tickets with this status", "Try another filter above.")
     for ticket in shown:
         show_ticket(ticket)
 
 # ---------- Employee view ----------
 else:
-    new_tab, mine_tab = st.tabs(["➕ New ticket", f"📋 My tickets ({len(tickets)})"])
+    new_tab, mine_tab = st.tabs([":material/add: New ticket", f":material/list_alt: My tickets ({len(tickets)})"])
 
     with new_tab:
         draft = st.session_state.get(DRAFT)
@@ -372,6 +359,7 @@ else:
 
     with mine_tab:
         if not tickets:
-            empty_state("You haven't raised any tickets yet.")
+            empty_state("confirmation_number", "No tickets yet",
+                        "When something isn't working, raise a ticket in the New ticket tab.")
         for ticket in tickets:
             show_ticket(ticket)

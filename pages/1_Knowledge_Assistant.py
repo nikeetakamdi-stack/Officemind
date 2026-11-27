@@ -1,38 +1,27 @@
-"""Knowledge Assistant page: upload PDFs on the left, chat on the right."""
+"""Knowledge Assistant page: upload PDFs (admins) in the sidebar, chat in the middle."""
 
 import html
 
 import streamlit as st
 
 from core.ui import (
+    AI_OFFLINE,
     THINKING_HTML,
-    apply_style,
-    is_admin,
-    lottie,
-    require_login,
+    friendly_error,
+    icon,
+    page_setup,
     section_title,
-    sidebar_menu,
     sources_html,
     typing_effect,
 )
-from core.ui import current_user
 from modules.knowledge.assistant import add_pdf, ask, delete_document, list_documents
 from modules.knowledge.question_log import log_question
 
-st.set_page_config(page_title="Knowledge Assistant · OfficeMind", page_icon="📚")
-apply_style()
-require_login()  # not logged in? -> login page
-sidebar_menu()
-admin = is_admin()  # True for admins, False for employees
-
-st.markdown(
-    """
-    <div class="om-page-title">📚 <span class="om-gradient">Knowledge Assistant</span></div>
-    <p class="om-page-subtitle">Ask questions about your company documents.
-    Answers come only from the PDFs you upload.</p>
-    """,
-    unsafe_allow_html=True,
+user = page_setup(
+    "pages/1_Knowledge_Assistant.py", "Knowledge Assistant", "menu_book",
+    "Ask questions about your company documents. Answers come only from the uploaded PDFs.",
 )
+admin = user["role"] == "admin"
 
 
 def show_sources(sources):
@@ -41,7 +30,7 @@ def show_sources(sources):
         st.markdown(sources_html(sources), unsafe_allow_html=True)
 
 
-# ---------- Sidebar ----------
+# ---------- Sidebar: documents ----------
 with st.sidebar:
     # Upload: admins only. For employees this part is never built, so it can't be used.
     if admin:
@@ -49,25 +38,20 @@ with st.sidebar:
         files = st.file_uploader(
             "Choose PDF files", type="pdf", accept_multiple_files=True, label_visibility="collapsed"
         )
-
-        if st.button(
-            "Add to knowledge base",
-            icon=":material/add_circle:",
-            type="primary",
-            width="stretch",
-            disabled=not files,
-        ):
+        if st.button("Add to knowledge base", icon=":material/upload:", type="primary",
+                     width="stretch", disabled=not files):
             for file in files:
                 with st.spinner(f"Reading {file.name}..."):
                     try:
                         count = add_pdf(file, file.name)
                     except Exception as error:
-                        st.error(f"{file.name}: {error}\n\nIs Ollama running?")
+                        friendly_error(f"Couldn't add {file.name}", AI_OFFLINE[1], str(error))
                         continue
                 if count:
-                    st.success(f"{file.name}: saved {count} chunks")
+                    st.success(f"{file.name} added ({count} sections).", icon=":material/check_circle:")
                 else:
-                    st.warning(f"{file.name}: no text found (it may be a scanned image)")
+                    st.warning(f"{file.name} has no readable text. It may be a scanned image.",
+                               icon=":material/warning:")
 
     section_title("Knowledge base")
 
@@ -80,10 +64,8 @@ with st.sidebar:
         # Employees see the list, but without delete buttons
         for name in documents:
             safe_name = html.escape(name)
-            st.markdown(
-                f'<div class="om-doc-row" title="{safe_name}">📄 {safe_name}</div>',
-                unsafe_allow_html=True,
-            )
+            st.markdown(f'<div class="om-doc-row" title="{safe_name}">{icon("description", 16)} {safe_name}</div>',
+                        unsafe_allow_html=True)
         st.caption("Only admins can add or remove documents.")
     elif documents:
         for number, name in enumerate(documents):
@@ -91,22 +73,16 @@ with st.sidebar:
             with st.container(key=f"doc_{number}"):
                 name_column, button_column = st.columns([5, 1], vertical_alignment="center")
                 safe_name = html.escape(name)
-                name_column.markdown(
-                    f'<p title="{safe_name}">📄 {safe_name}</p>', unsafe_allow_html=True
-                )
+                name_column.markdown(f'<p title="{safe_name}">{icon("description", 16)} {safe_name}</p>',
+                                     unsafe_allow_html=True)
                 # Each button needs its own key, so Streamlit can tell them apart
-                if button_column.button(
-                    "",
-                    icon=":material/delete:",
-                    key=f"delete_{name}",
-                    help=f"Delete {name}",
-                    type="tertiary",
-                ):
+                if button_column.button("", icon=":material/delete:", key=f"delete_{name}",
+                                        help=f"Delete {name}", type="tertiary"):
                     delete_document(name)
                     st.session_state.deleted_message = f"Deleted {name}"
                     st.rerun()  # refresh the page so the list updates
     else:
-        st.markdown('<p class="om-empty-docs">No documents yet.</p>', unsafe_allow_html=True)
+        st.caption("No documents yet." + (" Upload a PDF above." if admin else ""))
 
 
 # ---------- Chat ----------
@@ -115,27 +91,26 @@ if "knowledge_messages" not in st.session_state:
     st.session_state.knowledge_messages = []
 messages = st.session_state.knowledge_messages
 
-question = st.chat_input("Ask about your documents...")
+question = st.chat_input("Ask about your documents…")
+
+# A question sent from the search box ("Ask the AI assistant") arrives in the address
+if not question and st.query_params.get("ask"):
+    question = st.query_params["ask"]
+    del st.query_params["ask"]
 
 # Welcome screen when the chat is still empty
 if not messages and not question:
-    lottie("welcome.json", height=170, key="chat_welcome")
-    intro = (
-        "Upload a PDF in the sidebar, then ask me anything about it."
-        if admin
-        else "Ask me anything about your company documents."
-    )
+    intro = ("Upload a PDF in the sidebar, then ask anything about it."
+             if admin else "Ask anything about your company documents.")
+    hints = "".join(f'<span class="om-hint">{h}</span>' for h in (
+        "How many leave days do I get?", "What is the travel policy?", "Who do I contact for IT help?"))
     st.markdown(
         f"""
         <div class="om-welcome">
+          <div class="om-icon-tile">{icon("auto_awesome")}</div>
           <h3>How can I help today?</h3>
-          <p>{intro}
-          I'll show you which file and page every answer comes from.</p>
-          <div class="om-hints">
-            <span class="om-hint">💡 How many leave days do I get?</span>
-            <span class="om-hint">💡 What is the travel policy?</span>
-            <span class="om-hint">💡 Who do I contact for IT help?</span>
-          </div>
+          <p>{intro} Every answer shows which file and page it comes from.</p>
+          <div class="om-hints">{hints}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -157,15 +132,15 @@ if question:
             st.markdown(question)
 
     with st.chat_message("assistant"):
-        # One spot that first shows the bouncing dots, then the answer
+        # One spot that first shows grey "loading" lines, then the answer
         spot = st.empty()
         spot.markdown(THINKING_HTML, unsafe_allow_html=True)
         try:
             answer, sources = ask(question)
             # Remember the question for the Dashboard (answered = it found sources)
-            log_question(current_user(), question, answered=bool(sources), page="knowledge")
-        except Exception as error:
-            answer, sources = f"Something went wrong: {error}\n\nIs Ollama running?", []
+            log_question(user, question, answered=bool(sources), page="knowledge")
+        except Exception:
+            answer, sources = f"**{AI_OFFLINE[0]}.** {AI_OFFLINE[1]}", []
 
         with spot.container():
             # Type the answer out word by word, then show the sources

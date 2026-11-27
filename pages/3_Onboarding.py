@@ -10,12 +10,17 @@ import streamlit as st
 
 from core.config import ONBOARDING_STUCK_DAYS
 from core.ui import (
+    AI_OFFLINE,
     THINKING_HTML,
-    apply_style,
-    is_admin,
-    require_login,
-    sidebar_menu,
+    data_table,
+    empty_state,
+    heading,
+    icon,
+    onboarding_badge,
+    page_setup,
+    progress_cell,
     sources_html,
+    stat_cards,
     typing_effect,
 )
 from modules.knowledge.assistant import ask, document_path, list_documents
@@ -37,24 +42,13 @@ from modules.onboarding.checklists import (
     set_task_done,
 )
 
-st.set_page_config(page_title="Onboarding · OfficeMind", page_icon="🚀")
-apply_style()
-user = require_login()  # not logged in? -> login page
-sidebar_menu()
-admin = is_admin()
-
-subtitle = (
+user = page_setup(
+    "pages/3_Onboarding.py", "Onboarding", "task_alt",
     "Build onboarding checklists, give them to new team members and see how everyone is doing."
-    if admin
-    else "Your first steps at the company. Tick tasks off as you go, and ask the assistant anything."
+    if (st.session_state.get("user") or {}).get("role") == "admin"
+    else "Your first steps at the company. Tick tasks off as you go, and ask the assistant anything.",
 )
-st.markdown(
-    f"""
-    <div class="om-page-title">🚀 <span class="om-gradient">Onboarding</span></div>
-    <p class="om-page-subtitle">{subtitle}</p>
-    """,
-    unsafe_allow_html=True,
-)
+admin = user["role"] == "admin"
 
 # A message saved before the page refreshed (e.g. "Checklist created")
 if "onboarding_message" in st.session_state:
@@ -66,34 +60,26 @@ def done_and_refresh(message: str) -> None:
     st.rerun()
 
 
-def empty_state(text: str) -> None:
-    st.markdown(f'<div class="om-empty-state">{text}</div>', unsafe_allow_html=True)
-
-
 # =====================================================================
 # ADMIN
 # =====================================================================
-STATUS_ICONS = {"completed": "🟢", "on_track": "🔵", "not_started": "⚪", "stuck": "🔴"}
-
-
 def progress_tab() -> None:
     rows = progress_overview(user)
     if not rows:
-        empty_state("Nobody is onboarding yet. Create a checklist, then assign it in the Assign tab.")
+        empty_state("group_add", "Nobody is onboarding yet",
+                    "Create a checklist, then give it to new team members in the Assign tab.")
         return
 
     counts = {key: sum(r["status"] == key for r in rows) for key in STATUSES}
-    st.markdown(
-        f"""
-        <div class="om-stats om-stats-4">
-          <div class="om-stat"><span>{len(rows)}</span>Assigned</div>
-          <div class="om-stat om-stat-closed"><span>{counts['completed']}</span>Completed</div>
-          <div class="om-stat om-stat-progress"><span>{counts['on_track'] + counts['not_started']}</span>In progress</div>
-          <div class="om-stat om-stat-open"><span>{counts['stuck']}</span>Stuck</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    stat_cards([
+        {"icon": "assignment_ind", "label": "Assigned", "value": len(rows), "note": "checklists given out"},
+        {"icon": "check_circle", "label": "Completed", "value": counts["completed"], "note": "all tasks done",
+         "tone": "green"},
+        {"icon": "trending_up", "label": "In progress", "value": counts["on_track"] + counts["not_started"],
+         "note": "still working on it"},
+        {"icon": "error", "label": "Stuck", "value": counts["stuck"],
+         "note": f"idle {ONBOARDING_STUCK_DAYS}+ days", "tone": "red" if counts["stuck"] else "green"},
+    ])
 
     # Who is stuck: a short list on top, so it's the first thing the admin sees
     stuck = [r for r in rows if r["status"] == "stuck"]
@@ -106,7 +92,7 @@ def progress_tab() -> None:
         st.markdown(
             f"""
             <div class="om-ai-card om-ai-stuck">
-              <div class="om-ai-title">🔴 Needs a nudge</div>
+              <div class="om-ai-title">{icon("error")} Needs a nudge</div>
               <ul class="om-stuck-list">{items}</ul>
               <p>Stuck = not finished and nothing ticked for {ONBOARDING_STUCK_DAYS} days or more.</p>
             </div>
@@ -115,26 +101,20 @@ def progress_tab() -> None:
         )
 
     # Everyone's progress in a table
-    table = [
-        {
-            "Employee": r["employee"],
-            "Checklist": r["checklist"],
-            "Progress": r["percent"],
-            "Done": f"{r['done']}/{r['total']}",
-            "Last activity": days_ago_text(r["days_idle"]),
-            "Status": f"{STATUS_ICONS[r['status']]} {STATUSES[r['status']]}",
-        }
-        for r in rows
-    ]
-    st.dataframe(
-        table,
-        hide_index=True,
-        width="stretch",
-        column_config={
-            "Progress": st.column_config.ProgressColumn(
-                "Progress", min_value=0, max_value=100, format="%d%%"
-            ),
-        },
+    heading("Everyone's progress")
+    data_table(
+        ["Employee", "Checklist", "Progress", "Done", "Last activity", "Status"],
+        [
+            [
+                f"<strong>{html.escape(r['employee'])}</strong>",
+                html.escape(r["checklist"]),
+                progress_cell(r["percent"]),
+                f"{r['done']}/{r['total']}",
+                days_ago_text(r["days_idle"]),
+                onboarding_badge(r["status"], STATUSES[r["status"]]),
+            ]
+            for r in rows
+        ],
     )
 
 
@@ -149,7 +129,7 @@ def checklist_card(checklist: dict, documents: list[str]) -> None:
         st.markdown(
             f"""
             <div class="om-ticket-top">
-              <span class="om-ticket-title">📋 {html.escape(checklist['name'])}</span>
+              <span class="om-ticket-title">{html.escape(checklist['name'])}</span>
               <span class="om-badge">{checklist['task_count']} tasks · assigned to {checklist['assigned_count']}</span>
             </div>
             {description}
@@ -227,7 +207,7 @@ def checklists_tab() -> None:
 
     checklists = list_checklists()
     if not checklists:
-        empty_state("No checklists yet. Create your first one above.")
+        empty_state("playlist_add", "No checklists yet", "Create your first checklist above.")
         return
     documents = list_documents()
     for checklist in checklists:
@@ -238,10 +218,11 @@ def assign_tab() -> None:
     checklists = list_checklists()
     employees = list_employees()
     if not checklists:
-        empty_state("Create a checklist first, in the Checklists tab.")
+        empty_state("playlist_add", "No checklists to assign", "Create a checklist first, in the Checklists tab.")
         return
     if not employees:
-        empty_state("No employees yet. People who sign up become employees automatically.")
+        empty_state("person_search", "No employees yet",
+                    "People who create an account become employees automatically.")
         return
 
     checklist = st.selectbox(
@@ -297,23 +278,23 @@ def progress_bar(assignment: dict) -> None:
     )
 
 
-CONFETTI_COLORS = ["#7C5CFF", "#22D3EE", "#F472B6", "#FACC15", "#34D399"]
+CONFETTI_COLORS = ["#1F4FB5", "#5B8DEF", "#17B26A", "#F79009"]  # brand blues + status colours
 
 
 def celebration(show_confetti: bool) -> None:
-    """The "all done" card. Confetti only right after the last task is ticked."""
+    """The "all done" card. A few confetti pieces only right after the last task is ticked."""
     confetti = ""
     if show_confetti:
         confetti = "".join(
-            f'<i style="--x:{(i * 37) % 100}%; --d:{(i % 7) * 0.07:.2f}s; '
+            f'<i style="--x:{(i * 37) % 100}%; --d:{(i % 6) * 0.06:.2f}s; '
             f'--r:{(i * 47) % 360}deg; --c:{CONFETTI_COLORS[i % len(CONFETTI_COLORS)]}"></i>'
-            for i in range(28)
+            for i in range(16)
         )
     st.markdown(
         f"""
         <div class="om-celebrate">
           <div class="om-confetti">{confetti}</div>
-          <div class="om-celebrate-emoji">🎉</div>
+          <div class="om-icon-tile">{icon("celebration")}</div>
           <div><strong>All done. Welcome aboard!</strong>
           <p>You've finished every task on this checklist.</p></div>
         </div>
@@ -327,7 +308,7 @@ def on_tick(assignment_id: int, task_id: int) -> None:
     done = st.session_state[f"tick_{assignment_id}_{task_id}"]
     if set_task_done(user, assignment_id, task_id, done):
         st.session_state.celebrate = assignment_id
-        st.toast("Onboarding complete! 🎉")
+        st.toast("Onboarding complete. Welcome aboard!", icon=":material/celebration:")
 
 
 def task_row(assignment: dict, task: dict) -> None:
@@ -360,7 +341,7 @@ def task_row(assignment: dict, task: dict) -> None:
                 )
             else:
                 st.markdown(
-                    f'<div class="om-task-desc">📄 Related document: {html.escape(task["document"])} '
+                    f'<div class="om-task-desc">{icon("description", 16)} Related document: {html.escape(task["document"])} '
                     "(ask the assistant below about it)</div>",
                     unsafe_allow_html=True,
                 )
@@ -369,14 +350,15 @@ def task_row(assignment: dict, task: dict) -> None:
 def employee_checklists() -> None:
     assignments = my_onboarding(user)
     if not assignments:
-        empty_state("🌱 No onboarding checklist yet. Your admin will assign one to you.")
+        empty_state("event_available", "No onboarding checklist yet",
+                    "Your admin will assign one to you. Meanwhile, ask the assistant below anything.")
         return
 
     celebrate = st.session_state.pop("celebrate", None)
     for assignment in assignments:
         with st.container(key=f"assignment_{assignment['id']}"):
             st.markdown(
-                f'<div class="om-ticket-title">📋 {html.escape(assignment["name"])}</div>'
+                f'<div class="om-ticket-title">{html.escape(assignment["name"])}</div>'
                 + (
                     f'<p class="om-card-text">{html.escape(assignment["description"])}</p>'
                     if assignment["description"]
@@ -393,12 +375,9 @@ def employee_checklists() -> None:
 
 def assistant_chat() -> None:
     """Ask questions about the company documents, right here on the onboarding page."""
+    heading("Ask the assistant")
     st.markdown(
-        """
-        <div class="om-section-title">💬 Ask the assistant</div>
-        <p class="om-page-subtitle">Questions about your first weeks? The answers come from the
-        company documents.</p>
-        """,
+        '<p class="om-muted">Questions about your first weeks? The answers come from the company documents.</p>',
         unsafe_allow_html=True,
     )
     if "onboarding_messages" not in st.session_state:
@@ -412,7 +391,7 @@ def assistant_chat() -> None:
                 if message.get("sources"):
                     st.markdown(sources_html(message["sources"]), unsafe_allow_html=True)
 
-    question = st.chat_input("Ask about policies, tools, your first week...")
+    question = st.chat_input("Ask about policies, tools, your first week…")
     if question:
         messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
@@ -424,8 +403,8 @@ def assistant_chat() -> None:
             try:
                 answer, sources = ask(question)
                 log_question(user, question, answered=bool(sources), page="onboarding")
-            except Exception as error:
-                answer, sources = f"Something went wrong: {error}\n\nIs Ollama running?", []
+            except Exception:
+                answer, sources = f"**{AI_OFFLINE[0]}.** {AI_OFFLINE[1]}", []
             with spot.container():
                 st.write_stream(typing_effect(answer))
                 if sources:
@@ -435,7 +414,9 @@ def assistant_chat() -> None:
 
 # =====================================================================
 if admin:
-    progress, checklists, assign = st.tabs(["📊 Progress", "📝 Checklists", "👥 Assign"])
+    progress, checklists, assign = st.tabs(
+        [":material/insights: Progress", ":material/checklist: Checklists", ":material/person_add: Assign"]
+    )
     with progress:
         progress_tab()
     with checklists:
