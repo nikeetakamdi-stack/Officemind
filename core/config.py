@@ -3,14 +3,18 @@
 import os
 from pathlib import Path
 
-# Folders
+# Folders. For testing, the OFFICEMIND_DATA environment variable can point all data
+# (databases and uploaded files) to another folder, so real data is never touched.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = Path(os.environ.get("OFFICEMIND_DATA", PROJECT_ROOT / "data"))
 CHROMA_DIR = DATA_DIR / "chroma"  # ChromaDB saves its database files here
+UPLOADS_DIR = DATA_DIR / "uploads"  # a copy of each uploaded PDF, so people can open it
 
-# SQLite file with user accounts and helpdesk tickets.
-# For testing you can point it somewhere else with the OFFICEMIND_DB environment variable.
+# SQLite file with user accounts, helpdesk tickets and onboarding checklists.
 DATABASE_PATH = Path(os.environ.get("OFFICEMIND_DB", DATA_DIR / "officemind.db"))
+
+# Onboarding: an employee counts as "stuck" after this many days without ticking a task
+ONBOARDING_STUCK_DAYS = 3
 
 # Helpdesk settings
 TICKET_CATEGORIES = ["Network", "Software", "Hardware", "Access", "Other"]

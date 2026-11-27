@@ -1,11 +1,14 @@
 """The Knowledge Assistant's brain: save PDFs, then answer questions from them."""
 
+from pathlib import Path
+
 from core.config import (
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     KNOWLEDGE_COLLECTION,
     SOURCE_MARGIN,
     TOP_K,
+    UPLOADS_DIR,
 )
 from core.llm import chat, embed
 from core.vector_store import get_collection
@@ -42,7 +45,17 @@ def add_pdf(file, filename: str) -> int:
     collection.delete(where={"source": filename})
     embeddings = embed([DOCUMENT_PREFIX + chunk for chunk in chunks])
     collection.add(ids=ids, documents=chunks, embeddings=embeddings, metadatas=metadatas)
+
+    # Keep a copy of the PDF itself, so other pages (e.g. Onboarding) can let people open it
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    document_path(filename).write_bytes(file.getvalue())
     return len(chunks)
+
+
+def document_path(filename: str) -> Path:
+    """Where the copy of an uploaded PDF is kept. Path(...).name drops any folder
+    names hidden in the file name, so a file can never be saved outside the uploads folder."""
+    return UPLOADS_DIR / Path(filename).name
 
 
 def list_documents() -> list[str]:
@@ -53,9 +66,11 @@ def list_documents() -> list[str]:
 
 
 def delete_document(filename: str) -> None:
-    """Remove every chunk of this file from ChromaDB, so answers no longer use it."""
+    """Remove every chunk of this file from ChromaDB, so answers no longer use it,
+    and delete the saved copy of the PDF."""
     collection = get_collection(KNOWLEDGE_COLLECTION)
     collection.delete(where={"source": filename})
+    document_path(filename).unlink(missing_ok=True)
 
 
 def search_documents(text: str, limit: int = 3) -> list[dict]:

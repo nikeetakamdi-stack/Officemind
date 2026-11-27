@@ -45,7 +45,8 @@ MODULES = [
      "pages/1_Knowledge_Assistant.py"),
     ("🎧", "Helpdesk", "Raise IT tickets and follow them until they're solved.",
      "pages/2_Helpdesk.py"),
-    ("🚀", "Onboarding", "Guide new team members through their first weeks.", None),
+    ("🚀", "Onboarding", "Guide new team members through their first weeks.",
+     "pages/3_Onboarding.py"),
     ("📊", "Dashboard", "See how OfficeMind is used across the team.", None),
 ]
 

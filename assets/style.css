@@ -537,6 +537,130 @@ iframe[title="streamlit_lottie.streamlit_lottie"] { mix-blend-mode: lighten; }
 .om-evidence { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; }
 .om-evidence q { color: var(--om-muted); font-size: 0.85rem; font-style: italic; }
 
+/* ---------- Onboarding ---------- */
+.om-stats-4 { grid-template-columns: repeat(4, 1fr); }
+.om-stat-progress span { color: #93C5FD; }
+@media (max-width: 640px) { .om-stats-4 { grid-template-columns: repeat(2, 1fr); } }
+
+.om-section-title { margin: 2rem 0 0.25rem; font-size: 1.2rem; font-weight: 700; }
+
+/* "Needs a nudge" box for stuck employees */
+.om-ai-stuck { border-color: rgba(248, 113, 113, 0.35); background: rgba(248, 113, 113, 0.07); }
+.om-stuck-list { margin: 0; padding: 0; list-style: none; }
+.om-stuck-list li { padding: 0.25rem 0; font-size: 0.92rem; }
+.om-stuck-list span { display: block; color: var(--om-muted); font-size: 0.8rem; }
+
+/* Checklist cards (admin) and the employee's checklist */
+[class*="st-key-checklist_"],
+[class*="st-key-assignment_"] {
+  margin-bottom: 0.75rem;
+  padding: 1rem 1.1rem 0.75rem;
+  border: 1px solid var(--om-border);
+  border-radius: var(--om-radius);
+  background: linear-gradient(180deg, var(--om-surface-2), var(--om-surface));
+  box-shadow: var(--om-shadow);
+}
+.om-task-line { display: flex; flex-direction: column; font-size: 0.92rem; }
+.om-task-line span { color: var(--om-muted); font-size: 0.82rem; }
+
+/* Progress bar: slides from the old value (--from) to the new one (--to) */
+.om-progress-head {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.5rem 0 0.35rem;
+  color: var(--om-muted);
+  font-size: 0.88rem;
+}
+.om-progress-head strong { color: var(--om-text); }
+.om-progress {
+  height: 10px;
+  margin-bottom: 0.9rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.om-progress-fill {
+  width: var(--to);
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--om-primary), var(--om-cyan));
+  box-shadow: 0 0 12px rgba(124, 92, 255, 0.6);
+  animation: om-grow 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes om-grow {
+  from { width: var(--from); }
+  to   { width: var(--to); }
+}
+
+/* One task. The "_done" / "_todo" ending of the key changes when it's ticked,
+   so the card is redrawn and plays its animation. */
+[class*="st-key-task_"] {
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+  padding: 0.6rem 0.8rem 0.4rem;
+  border: 1px solid var(--om-border);
+  border-radius: 12px;
+  background: var(--om-surface);
+  transition: border-color var(--om-ease), transform var(--om-ease);
+}
+[class*="st-key-task_"]:hover { border-color: rgba(124, 92, 255, 0.4); transform: translateX(2px); }
+[class*="st-key-task_"][class*="_done"] {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.06);
+  animation: om-tick 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[class*="st-key-task_"][class*="_done"] [data-testid="stCheckbox"] p {
+  color: var(--om-muted);
+  text-decoration: line-through;
+  text-decoration-color: rgba(52, 211, 153, 0.8);
+}
+[class*="st-key-task_"][class*="_todo"] { animation: om-fade-in 300ms ease; }
+@keyframes om-tick {
+  0%   { transform: scale(0.98); background: rgba(52, 211, 153, 0.28); }
+  60%  { transform: scale(1.01); }
+  100% { transform: scale(1);    background: rgba(52, 211, 153, 0.06); }
+}
+/* Streamlit pulls text blocks up by 1rem at the bottom; the 1rem here gives that space back */
+.om-task-desc { margin: 0 0 1rem 1.75rem; color: var(--om-muted); font-size: 0.85rem; }
+[class*="st-key-task_"] [data-testid="stDownloadButton"] { margin-left: 1.5rem; }
+
+/* "All done" celebration with falling confetti */
+.om-celebrate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+  padding: 0.9rem 1.1rem;
+  overflow: hidden;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.14), rgba(124, 92, 255, 0.14));
+  animation: om-fade-in 400ms ease both;
+}
+.om-celebrate p { margin: 0; color: var(--om-muted); font-size: 0.88rem; }
+.om-celebrate-emoji { font-size: 2rem; animation: om-bounce-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1.4) both; }
+.om-confetti { position: absolute; inset: 0; pointer-events: none; }
+.om-confetti i {
+  position: absolute;
+  top: -12px;
+  left: var(--x);
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+  animation: om-confetti 1.8s ease-out var(--d) forwards;
+}
+@keyframes om-confetti {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(130px) rotate(var(--r)); }
+}
+@keyframes om-bounce-in {
+  0%   { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
 .om-empty-state {
   padding: 2rem 1rem;
   border: 1px dashed var(--om-border);

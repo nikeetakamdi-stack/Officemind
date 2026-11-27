@@ -58,7 +58,8 @@ def sidebar_menu() -> None:
             icon=":material/menu_book:",
         )
         st.page_link("pages/2_Helpdesk.py", label="Helpdesk", icon=":material/support_agent:")
-        # Later modules get one line each here, e.g. Onboarding, Dashboard
+        st.page_link("pages/3_Onboarding.py", label="Onboarding", icon=":material/rocket_launch:")
+        # Later modules get one line each here, e.g. Dashboard
 
         user = current_user()
         if user:
