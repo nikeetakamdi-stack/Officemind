@@ -10,6 +10,11 @@ An AI workplace assistant that runs entirely on your own computer. No data leave
 - Every answer shows which file and page it came from.
 - Remove a document with its 🗑️ button, and the assistant stops using it.
 
+**Login and roles** (Phase 1, Step 2)
+- Sign up and log in. Passwords are stored as secure hashes, never as plain text.
+- The **first** account created becomes the **admin**; everyone after is an **employee**.
+- Admins can upload and delete PDFs. Employees can ask questions.
+
 Coming later: Helpdesk, Onboarding and Dashboard modules.
 
 ## How it works
@@ -50,7 +55,7 @@ Coming later: Helpdesk, Onboarding and Dashboard modules.
 
 ## Running it
 
-Make sure Ollama is running, then:
+Make sure Ollama is running, then, **from inside the `officemind` folder** (so the dark theme loads):
 ```
 streamlit run app.py
 ```
@@ -62,12 +67,20 @@ Your browser opens at http://localhost:8501. Click **Knowledge Assistant**, uplo
 
 ```
 officemind/
-├── app.py                         home page
+├── app.py                         home page (welcome screen)
+├── .streamlit/config.toml         dark theme colours
+├── assets/
+│   ├── style.css                  the look: cards, chat bubbles, animations
+│   └── welcome.json               the Lottie welcome animation
 ├── pages/
+│   ├── 0_Login.py                 login + sign-up page
 │   └── 1_Knowledge_Assistant.py   upload + chat page
 ├── core/                          shared code every module uses
+│   ├── auth.py                    sign up, log in, password hashing
 │   ├── config.py                  all settings (models, chunk size, ...)
+│   ├── database.py                opens the SQLite user database
 │   ├── llm.py                     talks to Ollama
+│   ├── ui.py                      shared styles, sidebar menu, typing effect
 │   └── vector_store.py            opens the ChromaDB database
 ├── modules/
 │   └── knowledge/
@@ -81,4 +94,4 @@ To add a new module (for example, helpdesk), create `modules/helpdesk/` and a pa
 
 ## Privacy
 
-The database (`data/chroma/`), PDF files and `.env` secret files are listed in `.gitignore`, so they are never uploaded to GitHub.
+The document database (`data/chroma/`), the user database (`data/officemind.db`), PDF files and `.env` secret files are listed in `.gitignore`, so they are never uploaded to GitHub.

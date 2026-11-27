@@ -26,3 +26,7 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# User accounts database (has password hashes and names)
+*.db
+*.sqlite3

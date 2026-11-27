@@ -6,6 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 CHROMA_DIR = DATA_DIR / "chroma"  # ChromaDB saves its database files here
+DATABASE_PATH = DATA_DIR / "officemind.db"  # SQLite file with user accounts
 
 # Ollama models (both free and run on your own computer)
 OLLAMA_CHAT_MODEL = "llama3.2"  # writes the answers

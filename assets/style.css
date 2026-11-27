@@ -1,0 +1,407 @@
+/* =========================================================
+   OfficeMind look & feel
+   Loaded on every page by core/ui.py -> apply_style()
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ---------- Colours and sizes used everywhere ---------- */
+:root {
+  --om-bg: #0B0F19;
+  --om-surface: #131A2A;
+  --om-surface-2: #182136;
+  --om-border: rgba(255, 255, 255, 0.08);
+  --om-text: #E5E7EB;
+  --om-muted: #9CA3AF;
+  --om-primary: #7C5CFF;
+  --om-primary-soft: rgba(124, 92, 255, 0.15);
+  --om-cyan: #22D3EE;
+  --om-radius: 16px;
+  --om-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --om-shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(124, 92, 255, 0.35);
+  --om-ease: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------- Page ---------- */
+.stApp {
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(1100px 520px at 0% -10%, rgba(124, 92, 255, 0.14), transparent 60%),
+    radial-gradient(900px 480px at 110% 0%, rgba(34, 211, 238, 0.08), transparent 60%),
+    var(--om-bg);
+}
+
+[data-testid="stHeader"] { background: transparent; }
+
+[data-testid="stMainBlockContainer"] {
+  max-width: 920px;
+  padding-top: 2.5rem;
+}
+
+h1, h2, h3 { letter-spacing: -0.02em; }
+
+/* Gradient text for big titles */
+.om-gradient {
+  background: linear-gradient(90deg, #FFFFFF 0%, #C4B5FD 45%, var(--om-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.om-page-title { margin: 0 0 0.25rem; font-size: 2rem; font-weight: 700; }
+.om-page-subtitle { margin: 0 0 1.5rem; color: var(--om-muted); }
+
+/* ---------- Sidebar ---------- */
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, #111827 0%, var(--om-bg) 100%);
+  border-right: 1px solid var(--om-border);
+}
+
+.om-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.om-brand-logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--om-primary), var(--om-cyan));
+  box-shadow: 0 6px 18px rgba(124, 92, 255, 0.45);
+}
+
+/* Small grey section titles, e.g. "UPLOAD DOCUMENTS" */
+.om-section {
+  margin: 1.25rem 0 0.5rem;
+  color: var(--om-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Menu links */
+[data-testid="stSidebar"] [data-testid="stPageLink"] a {
+  border-radius: 10px;
+  transition: background var(--om-ease), transform var(--om-ease);
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
+  background: var(--om-primary-soft);
+  transform: translateX(2px);
+}
+
+/* One card per uploaded document */
+[class*="st-key-doc_"] {
+  padding: 0.35rem 0.4rem 0.35rem 0.75rem;
+  border: 1px solid var(--om-border);
+  border-radius: 12px;
+  background: var(--om-surface);
+  transition: border-color var(--om-ease), transform var(--om-ease), box-shadow var(--om-ease);
+}
+[class*="st-key-doc_"]:hover {
+  border-color: rgba(124, 92, 255, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+[class*="st-key-doc_"] p {
+  margin: 0;
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[class*="st-key-doc_"] [data-testid="stHorizontalBlock"] { align-items: center; }
+
+.om-empty-docs { color: var(--om-muted); font-size: 0.88rem; }
+
+/* ---------- File uploader ---------- */
+[data-testid="stFileUploaderDropzone"] {
+  border: 1.5px dashed rgba(124, 92, 255, 0.45);
+  border-radius: 14px;
+  background: var(--om-surface-2);
+  transition: border-color var(--om-ease), background var(--om-ease);
+}
+[data-testid="stFileUploaderDropzone"]:hover {
+  border-color: var(--om-primary);
+  background: var(--om-primary-soft);
+}
+
+/* ---------- Buttons ---------- */
+.stButton > button {
+  border-radius: 12px;
+  transition: transform var(--om-ease), box-shadow var(--om-ease), background var(--om-ease);
+}
+.stButton > button:hover { transform: translateY(-1px); }
+
+.stButton > button[kind="primary"],
+[data-testid="stBaseButton-primary"] {
+  border: none;
+  background: linear-gradient(135deg, var(--om-primary), #5B8CFF);
+  box-shadow: 0 6px 18px rgba(124, 92, 255, 0.35);
+}
+.stButton > button[kind="primary"]:hover,
+[data-testid="stBaseButton-primary"]:hover {
+  box-shadow: 0 10px 26px rgba(124, 92, 255, 0.5);
+}
+
+/* Little bin buttons turn red on hover */
+[class*="st-key-doc_"] .stButton > button:hover,
+[class*="st-key-doc_"] .stButton > button:hover * { color: #F87171 !important; }
+
+/* ---------- Cards (home page) ---------- */
+[class*="st-key-card_"] {
+  height: 100%;
+  padding: 1.25rem;
+  border: 1px solid var(--om-border);
+  border-radius: var(--om-radius);
+  background: linear-gradient(180deg, var(--om-surface-2), var(--om-surface));
+  box-shadow: var(--om-shadow);
+  transition: transform var(--om-ease), box-shadow var(--om-ease), border-color var(--om-ease);
+}
+[class*="st-key-card_"]:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--om-shadow-hover);
+}
+[class*="st-key-card_soon"] { opacity: 0.75; }
+
+.om-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0.75rem;
+  border-radius: 12px;
+  background: var(--om-primary-soft);
+  font-size: 1.35rem;
+}
+.om-card-title { margin: 0 0 0.25rem; font-weight: 600; font-size: 1.05rem; }
+.om-card-text { margin: 0 0 0.75rem; color: var(--om-muted); font-size: 0.9rem; }
+
+.om-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--om-muted);
+  font-size: 0.75rem;
+}
+
+/* Hero (welcome) box */
+.om-hello { margin: 0 0 0.35rem; color: var(--om-muted); font-weight: 500; }
+.om-hero-title { margin: 0 0 0.75rem; padding: 0; font-size: 2.6rem; font-weight: 700; line-height: 1.1; }
+
+/* The Lottie animation sits in a small frame with a flat background.
+   "lighten" lets the page's soft glow show through, so no box is visible. */
+iframe[title="streamlit_lottie.streamlit_lottie"] { mix-blend-mode: lighten; }
+.om-hero-text { margin: 0.75rem 0 0; color: var(--om-muted); font-size: 1.05rem; line-height: 1.6; }
+
+/* ---------- Chat bubbles ---------- */
+[data-testid="stChatMessage"] {
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  background: transparent;
+  animation: om-fade-in 350ms ease both;
+}
+
+[data-testid="stChatMessageContent"] {
+  flex: 0 1 auto;
+  max-width: 80%;
+  margin: 0;  /* Streamlit centres this box by default; keep it next to the avatar */
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* Your messages: right side, violet */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+  flex-direction: row-reverse;
+}
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
+  border-bottom-right-radius: 6px;
+  background: linear-gradient(135deg, var(--om-primary), #5B8CFF);
+  color: #FFFFFF;
+}
+
+/* AI messages: left side, dark card */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
+  border: 1px solid var(--om-border);
+  border-bottom-left-radius: 6px;
+  background: var(--om-surface);
+}
+
+/* Round, glowing avatars */
+[data-testid="stChatMessageAvatarUser"],
+[data-testid="stChatMessageAvatarAssistant"] {
+  border-radius: 50%;
+}
+[data-testid="stChatMessageAvatarAssistant"] {
+  background: linear-gradient(135deg, var(--om-primary), var(--om-cyan));
+  box-shadow: 0 0 14px rgba(124, 92, 255, 0.5);
+}
+
+@keyframes om-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Source "chips" under an answer */
+.om-sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -0.35rem; }
+.om-chip {
+  padding: 3px 10px;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.08);
+  color: #A5F3FC;
+  font-size: 0.78rem;
+  transition: background var(--om-ease);
+}
+.om-chip:hover { background: rgba(34, 211, 238, 0.16); }
+
+/* "Thinking" animation: three bouncing dots */
+.om-thinking { display: flex; align-items: center; gap: 0.7rem; color: var(--om-muted); }
+.om-dots { display: inline-flex; gap: 5px; }
+.om-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--om-primary);
+  animation: om-bounce 1.2s infinite ease-in-out;
+}
+.om-dots span:nth-child(2) { background: #9B83FF; animation-delay: 0.15s; }
+.om-dots span:nth-child(3) { background: var(--om-cyan); animation-delay: 0.3s; }
+
+@keyframes om-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Empty chat welcome */
+.om-welcome { text-align: center; }
+.om-welcome h3 { margin: 0 0 0.35rem; }
+.om-welcome p { margin: 0 auto; max-width: 460px; color: var(--om-muted); }
+.om-hints { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 1rem; }
+.om-hint {
+  padding: 6px 12px;
+  border: 1px solid var(--om-border);
+  border-radius: 999px;
+  background: var(--om-surface);
+  color: var(--om-text);
+  font-size: 0.85rem;
+  transition: border-color var(--om-ease), transform var(--om-ease);
+}
+.om-hint:hover { border-color: rgba(124, 92, 255, 0.5); transform: translateY(-1px); }
+
+/* ---------- Chat input ---------- */
+[data-testid="stChatInput"] {
+  border: 1px solid var(--om-border);
+  border-radius: 16px;
+  box-shadow: var(--om-shadow);
+  transition: border-color var(--om-ease), box-shadow var(--om-ease);
+}
+[data-testid="stChatInput"]:focus-within {
+  border-color: var(--om-primary);
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.25), var(--om-shadow);
+}
+
+/* ---------- Login page ---------- */
+.om-auth-header { margin: -0.5rem 0 1.25rem; text-align: center; }
+.om-auth-title { font-size: 2.2rem; font-weight: 700; line-height: 1.2; }
+.om-auth-header p { margin: 0.25rem 0 0; color: var(--om-muted); }
+
+.st-key-auth_card {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  border: 1px solid var(--om-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--om-surface-2), var(--om-surface));
+  box-shadow: var(--om-shadow);
+}
+/* The form already sits in our card, so remove its own border */
+.st-key-auth_card [data-testid="stForm"] { padding: 0; border: none; }
+
+/* Tabs: "Log in" / "Sign up" */
+.st-key-auth_card [data-baseweb="tab-list"] { gap: 0.25rem; }
+.st-key-auth_card [data-baseweb="tab"] {
+  flex: 1;
+  justify-content: center;
+  border-radius: 10px 10px 0 0;
+  transition: background var(--om-ease);
+}
+.st-key-auth_card [data-baseweb="tab"]:hover { background: var(--om-primary-soft); }
+
+/* Text boxes */
+[data-baseweb="input"] {
+  border-radius: 12px;
+  transition: box-shadow var(--om-ease), border-color var(--om-ease);
+}
+[data-baseweb="input"]:focus-within { box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.25); }
+
+/* ---------- Logged-in user (sidebar) ---------- */
+.om-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 1rem 0 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--om-border);
+  border-radius: 14px;
+  background: var(--om-surface);
+}
+.om-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--om-primary), var(--om-cyan));
+  color: #FFFFFF;
+  font-weight: 700;
+}
+.om-user-text { display: flex; flex-direction: column; min-width: 0; }
+.om-user-name {
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Role badges */
+.om-role {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.om-role-admin    { background: rgba(124, 92, 255, 0.18); color: #C4B5FD; }
+.om-role-employee { background: rgba(34, 211, 238, 0.12); color: #A5F3FC; }
+
+/* Read-only document list for employees */
+.om-doc-row {
+  margin: 0 0 0.4rem;
+  padding: 0.45rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--om-border);
+  border-radius: 12px;
+  background: var(--om-surface);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Messages (success / warning / error) ---------- */
+[data-testid="stAlert"] { border-radius: 12px; }
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { border-radius: 8px; background: rgba(255, 255, 255, 0.12); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
