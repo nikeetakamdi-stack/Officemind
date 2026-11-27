@@ -19,6 +19,7 @@ from core.ui import (
     typing_effect,
 )
 from modules.knowledge.assistant import ask, document_path, list_documents
+from modules.knowledge.question_log import log_question
 from modules.onboarding.checklists import (
     STATUSES,
     add_task,
@@ -422,6 +423,7 @@ def assistant_chat() -> None:
             spot.markdown(THINKING_HTML, unsafe_allow_html=True)
             try:
                 answer, sources = ask(question)
+                log_question(user, question, answered=bool(sources), page="onboarding")
             except Exception as error:
                 answer, sources = f"Something went wrong: {error}\n\nIs Ollama running?", []
             with spot.container():

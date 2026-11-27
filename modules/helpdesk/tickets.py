@@ -55,6 +55,11 @@ def create_helpdesk_tables() -> None:
             db.execute("ALTER TABLE tickets ADD COLUMN urgency TEXT NOT NULL DEFAULT 'medium'")
         if "ai_urgency" not in columns:
             db.execute("ALTER TABLE tickets ADD COLUMN ai_urgency TEXT")
+        # Phase 4 (Dashboard) needs to know when a ticket was closed.
+        # Tickets closed before this existed use their last update time as the best guess.
+        if "closed_at" not in columns:
+            db.execute("ALTER TABLE tickets ADD COLUMN closed_at TEXT")
+            db.execute("UPDATE tickets SET closed_at = updated_at WHERE status = 'closed'")
         db.execute(
             """
             CREATE TABLE IF NOT EXISTS ticket_replies (
@@ -201,9 +206,18 @@ def update_status(admin: dict, ticket_id: int, status: str) -> None:
     if status not in STATUSES:
         raise ValueError(f"Unknown status: {status}")
     with connect() as db:
+        # closed_at: set when the ticket is closed, cleared if it is opened again
         db.execute(
-            "UPDATE tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (status, ticket_id),
+            """
+            UPDATE tickets
+            SET status = ?, updated_at = CURRENT_TIMESTAMP,
+                closed_at = CASE WHEN ? = 'closed'
+                                 THEN COALESCE(CASE WHEN status = 'closed' THEN closed_at END,
+                                               CURRENT_TIMESTAMP)
+                                 ELSE NULL END
+            WHERE id = ?
+            """,
+            (status, status, ticket_id),
         )
 
 

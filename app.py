@@ -4,7 +4,7 @@ import html
 
 import streamlit as st
 
-from core.ui import apply_style, lottie, require_login, sidebar_menu
+from core.ui import apply_style, is_admin, lottie, require_login, sidebar_menu
 
 st.set_page_config(page_title="OfficeMind", page_icon="🧠", layout="wide")
 apply_style()
@@ -47,8 +47,10 @@ MODULES = [
      "pages/2_Helpdesk.py"),
     ("🚀", "Onboarding", "Guide new team members through their first weeks.",
      "pages/3_Onboarding.py"),
-    ("📊", "Dashboard", "See how OfficeMind is used across the team.", None),
+    ("📊", "Dashboard", "Tickets, onboarding and AI questions at a glance (admins).",
+     "pages/4_Dashboard.py"),
 ]
+ADMIN_ONLY = {"pages/4_Dashboard.py"}
 
 for row_start in range(0, len(MODULES), 2):
     columns = st.columns(2)
@@ -64,7 +66,9 @@ for row_start in range(0, len(MODULES), 2):
                 """,
                 unsafe_allow_html=True,
             )
-            if page:
+            if page in ADMIN_ONLY and not is_admin():
+                st.markdown('<span class="om-badge">🔒 Admins only</span>', unsafe_allow_html=True)
+            elif page:
                 st.page_link(page, label="Open", icon=":material/open_in_new:")
             else:
                 st.markdown('<span class="om-badge">Coming soon</span>', unsafe_allow_html=True)

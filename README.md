@@ -35,7 +35,12 @@ An AI workplace assistant that runs entirely on your own computer. No data leave
   and can ask the AI assistant questions on the same page.
 - Uploaded PDFs are now also kept as files in `data/uploads/` (not uploaded to GitHub), so tasks can link to them.
 
-Coming later: Dashboard module.
+**Manager dashboard** (Phase 4, admins only)
+- Stat cards: total tickets, open tickets, average time to close, documents, employees onboarding.
+- Interactive Plotly charts: tickets over time, by category, by urgency, and onboarding progress.
+- Most-asked AI questions, and **unanswered questions** (what the AI couldn't find, so you know which documents to add).
+- Date filter (last 7 days, 30 days, all time) and **Export to Excel** (one sheet per section).
+- Questions asked to the AI and ticket close times are now recorded for this.
 
 ## How it works
 
@@ -96,7 +101,8 @@ officemind/
 │   ├── 0_Login.py                 login + sign-up page
 │   ├── 1_Knowledge_Assistant.py   upload + chat page
 │   ├── 2_Helpdesk.py              tickets page
-│   └── 3_Onboarding.py            checklists, progress and assistant
+│   ├── 3_Onboarding.py            checklists, progress and assistant
+│   └── 4_Dashboard.py             manager dashboard (admins only)
 ├── core/                          shared code every module uses
 │   ├── auth.py                    sign up, log in, password hashing
 │   ├── config.py                  all settings (models, chunk size, ...)
@@ -107,7 +113,10 @@ officemind/
 ├── modules/
 │   ├── knowledge/
 │   │   ├── pdf_loader.py          reads and splits PDFs
-│   │   └── assistant.py           save, delete, search and answer
+│   │   ├── assistant.py           save, delete, search and answer
+│   │   └── question_log.py        remembers questions asked to the AI
+│   ├── dashboard/
+│   │   └── metrics.py             dashboard numbers and the Excel export
 │   ├── helpdesk/
 │   │   ├── tickets.py             create, list, update and reply to tickets
 │   │   └── ai.py                  category/urgency, similar tickets, possible fix

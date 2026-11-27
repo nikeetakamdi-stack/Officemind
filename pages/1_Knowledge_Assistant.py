@@ -15,7 +15,9 @@ from core.ui import (
     sources_html,
     typing_effect,
 )
+from core.ui import current_user
 from modules.knowledge.assistant import add_pdf, ask, delete_document, list_documents
+from modules.knowledge.question_log import log_question
 
 st.set_page_config(page_title="Knowledge Assistant · OfficeMind", page_icon="📚")
 apply_style()
@@ -160,6 +162,8 @@ if question:
         spot.markdown(THINKING_HTML, unsafe_allow_html=True)
         try:
             answer, sources = ask(question)
+            # Remember the question for the Dashboard (answered = it found sources)
+            log_question(current_user(), question, answered=bool(sources), page="knowledge")
         except Exception as error:
             answer, sources = f"Something went wrong: {error}\n\nIs Ollama running?", []
 

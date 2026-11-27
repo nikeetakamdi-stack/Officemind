@@ -3,3 +3,5 @@ chromadb>=0.5
 pypdf>=5.0
 ollama>=0.4
 streamlit-lottie>=0.0.5
+plotly>=5.20
+openpyxl>=3.1

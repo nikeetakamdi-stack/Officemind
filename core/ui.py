@@ -59,7 +59,8 @@ def sidebar_menu() -> None:
         )
         st.page_link("pages/2_Helpdesk.py", label="Helpdesk", icon=":material/support_agent:")
         st.page_link("pages/3_Onboarding.py", label="Onboarding", icon=":material/rocket_launch:")
-        # Later modules get one line each here, e.g. Dashboard
+        if is_admin():  # the dashboard is for admins only
+            st.page_link("pages/4_Dashboard.py", label="Dashboard", icon=":material/monitoring:")
 
         user = current_user()
         if user:
