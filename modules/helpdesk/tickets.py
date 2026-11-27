@@ -16,6 +16,13 @@ STATUSES = {
     "closed": "Closed",
 }
 
+# How urgent a ticket is. The AI suggests one; the employee can change it.
+URGENCIES = {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+}
+
 MAX_TITLE_LENGTH = 120
 MAX_TEXT_LENGTH = 4000
 
@@ -34,11 +41,20 @@ def create_helpdesk_tables() -> None:
                 category    TEXT NOT NULL,
                 status      TEXT NOT NULL DEFAULT 'open'
                             CHECK (status IN ('open', 'in_progress', 'closed')),
+                urgency     TEXT NOT NULL DEFAULT 'medium',
+                ai_urgency  TEXT,
                 created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+        # Databases made before Phase 2, Step 2 don't have the urgency columns yet: add them.
+        # Older tickets simply become "medium".
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(tickets)")}
+        if "urgency" not in columns:
+            db.execute("ALTER TABLE tickets ADD COLUMN urgency TEXT NOT NULL DEFAULT 'medium'")
+        if "ai_urgency" not in columns:
+            db.execute("ALTER TABLE tickets ADD COLUMN ai_urgency TEXT")
         db.execute(
             """
             CREATE TABLE IF NOT EXISTS ticket_replies (
@@ -59,29 +75,50 @@ def _require_admin(user: dict) -> None:
 
 
 # ---------- Employees ----------
-def create_ticket(
-    user: dict, title: str, description: str, category: str
-) -> tuple[int | None, str | None]:
-    """Save a new ticket. Returns (ticket number, None) or (None, error message)."""
+def check_ticket_text(title: str, description: str) -> str | None:
+    """Returns an error message if the title or description isn't OK, otherwise None."""
     title = title.strip()
     description = description.strip()
-
     if len(title) < 3:
-        return None, "Please give the ticket a short title (at least 3 characters)."
+        return "Please give the ticket a short title (at least 3 characters)."
     if len(title) > MAX_TITLE_LENGTH:
-        return None, f"The title can be at most {MAX_TITLE_LENGTH} characters."
+        return f"The title can be at most {MAX_TITLE_LENGTH} characters."
     if not description:
-        return None, "Please describe the problem."
+        return "Please describe the problem."
     if len(description) > MAX_TEXT_LENGTH:
-        return None, f"The description can be at most {MAX_TEXT_LENGTH} characters."
+        return f"The description can be at most {MAX_TEXT_LENGTH} characters."
+    return None
+
+
+def create_ticket(
+    user: dict,
+    title: str,
+    description: str,
+    category: str,
+    urgency: str = "medium",
+    ai_urgency: str | None = None,
+) -> tuple[int | None, str | None]:
+    """Save a new ticket. Returns (ticket number, None) or (None, error message).
+
+    `urgency` is what the employee finally chose; `ai_urgency` is what the AI suggested."""
+    error = check_ticket_text(title, description)
+    if error:
+        return None, error
     if category not in TICKET_CATEGORIES:
         return None, "Please choose a category."
+    if urgency not in URGENCIES:
+        return None, "Please choose an urgency."
+    if ai_urgency not in (None, *URGENCIES):
+        ai_urgency = None
 
     create_helpdesk_tables()
     with connect() as db:
         cursor = db.execute(
-            "INSERT INTO tickets (user_id, title, description, category) VALUES (?, ?, ?, ?)",
-            (user["id"], title, description, category),
+            """
+            INSERT INTO tickets (user_id, title, description, category, urgency, ai_urgency)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (user["id"], title.strip(), description.strip(), category, urgency, ai_urgency),
         )
     return cursor.lastrowid, None
 
@@ -89,7 +126,8 @@ def create_ticket(
 def list_tickets(user: dict) -> list[dict]:
     """Admins get every ticket; employees only get their own.
 
-    Order: Open first, then In Progress, then Closed; newest first inside each group."""
+    Order: tickets still being worked on come before Closed ones. Inside each group:
+    High urgency first, then Medium, then Low; then Open before In Progress; newest first."""
     create_helpdesk_tables()
     query = """
         SELECT tickets.*, users.full_name AS author,
@@ -101,11 +139,43 @@ def list_tickets(user: dict) -> list[dict]:
         query += " WHERE tickets.user_id = ?"
         params = (user["id"],)
     query += """
-        ORDER BY CASE tickets.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END,
+        ORDER BY CASE tickets.status WHEN 'closed' THEN 1 ELSE 0 END,
+                 CASE tickets.urgency WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+                 CASE tickets.status WHEN 'open' THEN 0 ELSE 1 END,
                  tickets.id DESC
     """
     with connect() as db:
         return [dict(row) for row in db.execute(query, params)]
+
+
+# ---------- For the helpdesk AI ----------
+def active_tickets() -> list[dict]:
+    """Every ticket that is still Open or In Progress (from all employees)."""
+    create_helpdesk_tables()
+    with connect() as db:
+        rows = db.execute(
+            "SELECT id, title, description, status FROM tickets WHERE status != 'closed'"
+        )
+        return [dict(row) for row in rows]
+
+
+def solved_tickets() -> list[dict]:
+    """Closed tickets that have at least one admin reply, with those replies joined together.
+    These are the "past solutions" the AI can learn a fix from."""
+    create_helpdesk_tables()
+    with connect() as db:
+        rows = db.execute(
+            """
+            SELECT tickets.id, tickets.title, tickets.description,
+                   GROUP_CONCAT(ticket_replies.message, ' / ') AS solution
+            FROM tickets
+            JOIN ticket_replies ON ticket_replies.ticket_id = tickets.id
+            JOIN users ON users.id = ticket_replies.user_id
+            WHERE tickets.status = 'closed' AND users.role = 'admin'
+            GROUP BY tickets.id
+            """
+        )
+        return [dict(row) for row in rows]
 
 
 def list_replies(ticket_id: int) -> list[dict]:

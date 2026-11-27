@@ -1,7 +1,7 @@
 """Helpdesk page.
 
-Employees: raise a ticket and follow their own tickets.
-Admins: see every ticket, change its status and reply.
+Employees: describe a problem, review the AI's suggestions, raise the ticket, and follow it.
+Admins: see every ticket (High urgency first), change its status and reply.
 """
 
 import html
@@ -9,10 +9,21 @@ import html
 import streamlit as st
 
 from core.config import TICKET_CATEGORIES
-from core.ui import apply_style, is_admin, require_login, sidebar_menu, status_badge
+from core.ui import (
+    apply_style,
+    is_admin,
+    require_login,
+    sidebar_menu,
+    status_badge,
+    thinking_html,
+    urgency_tag,
+)
+from modules.helpdesk.ai import analyze_ticket
 from modules.helpdesk.tickets import (
     STATUSES,
+    URGENCIES,
     add_reply,
+    check_ticket_text,
     create_ticket,
     friendly_time,
     list_replies,
@@ -50,16 +61,35 @@ def ticket_header(ticket: dict) -> None:
     by = f" · by {html.escape(ticket['author'])}" if admin else ""
     replies = ticket["reply_count"]
     reply_text = f" · 💬 {replies} repl{'y' if replies == 1 else 'ies'}" if replies else ""
+
+    # Urgency tag. ✨ = the AI suggested it and the employee kept it.
+    urgency, ai_urgency = ticket["urgency"], ticket["ai_urgency"]
+    if ai_urgency == urgency:
+        label, hover = f"✨ {URGENCIES[urgency]}", "Suggested by the AI"
+    elif ai_urgency:
+        label = URGENCIES[urgency]
+        hover = f"AI suggested {URGENCIES[ai_urgency]}; the employee chose {URGENCIES[urgency]}"
+    else:
+        label, hover = URGENCIES[urgency], "Raised before AI suggestions"
+    ai_note = (
+        f" · AI suggested {URGENCIES[ai_urgency]}"
+        if admin and ai_urgency and ai_urgency != urgency
+        else ""
+    )
+
     st.markdown(
         f"""
         <div class="om-ticket-top">
           <span class="om-ticket-title">
             <span class="om-ticket-id">#{ticket['id']}</span> {html.escape(ticket['title'])}
           </span>
-          {status_badge(ticket['status'], STATUSES[ticket['status']])}
+          <span class="om-badges">
+            {urgency_tag(urgency, label, hover)}
+            {status_badge(ticket['status'], STATUSES[ticket['status']])}
+          </span>
         </div>
         <div class="om-ticket-meta">
-          {html.escape(ticket['category'])}{by} · {friendly_time(ticket['created_at'])}{reply_text}
+          {html.escape(ticket['category'])}{by} · {friendly_time(ticket['created_at'])}{reply_text}{ai_note}
         </div>
         """,
         unsafe_allow_html=True,
@@ -140,6 +170,163 @@ def empty_state(text: str) -> None:
     st.markdown(f'<div class="om-empty-state">{text}</div>', unsafe_allow_html=True)
 
 
+# ---------- Raising a ticket (employees): step 1 describe, step 2 review ----------
+# While a ticket is being written, it is kept in st.session_state["ticket_draft"]:
+# {"title", "description", "analysis" (the AI's results), "step": "describe" or "review"}
+DRAFT = "ticket_draft"
+
+
+def describe_step() -> None:
+    """Step 1: title and description, then let the AI have a look."""
+    draft = st.session_state.get(DRAFT, {})
+    with st.form("describe_ticket"):
+        title = st.text_input(
+            "Title",
+            value=draft.get("title", ""),
+            max_chars=120,
+            placeholder="e.g. Can't connect to office Wi-Fi",
+        )
+        description = st.text_area(
+            "Description",
+            value=draft.get("description", ""),
+            max_chars=4000,
+            height=140,
+            placeholder="What happened? When did it start? Any error message?",
+        )
+        check = st.form_submit_button(
+            "Check with AI", type="primary", icon=":material/auto_awesome:", width="stretch"
+        )
+    st.caption(
+        "✨ The AI suggests a category and urgency, checks for similar tickets and looks for "
+        "a possible fix. You can change everything before you submit."
+    )
+
+    if check:
+        error = check_ticket_text(title, description)
+        if error:
+            st.error(error, icon=":material/error:")
+            return
+        spot = st.empty()
+        spot.markdown(thinking_html("The AI is reading your ticket…"), unsafe_allow_html=True)
+        analysis = analyze_ticket(title.strip(), description.strip())
+        spot.empty()
+        st.session_state[DRAFT] = {
+            "title": title.strip(),
+            "description": description.strip(),
+            "analysis": analysis,
+            "step": "review",
+        }
+        st.rerun()
+
+
+def similar_card(similar: list[dict]) -> None:
+    """Warning: someone already reported this problem."""
+    items = "".join(
+        f"""<li><span class="om-ticket-id">#{t['id']}</span> {html.escape(t['title'])}
+            {status_badge(t['status'], STATUSES[t['status']])}</li>"""
+        for t in similar
+    )
+    st.markdown(
+        f"""
+        <div class="om-ai-card om-ai-similar">
+          <div class="om-ai-title">⚠️ Similar issue already reported</div>
+          <ul class="om-ai-list">{items}</ul>
+          <p>If this is the same problem, the IT team is already working on it,
+          so you may not need a new ticket.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def fix_card(fix: dict) -> None:
+    """A possible fix, plus the original text it comes from."""
+    steps = "".join(f"<li>{html.escape(step)}</li>" for step in fix["steps"])
+    steps_html = f'<ol class="om-ai-steps">{steps}</ol>' if steps else ""
+    evidence = "".join(
+        f"""<div class="om-evidence"><span class="om-chip">{html.escape(e['label'])}</span>
+            <q>{html.escape(e['text'])}</q></div>"""
+        for e in fix["evidence"]
+    )
+    st.markdown(
+        f"""
+        <div class="om-ai-card om-ai-fix">
+          <div class="om-ai-title">💡 Possible fix: try this first</div>
+          {steps_html}
+          <div class="om-ai-based">Based on</div>
+          {evidence}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def review_step(draft: dict) -> None:
+    """Step 2: show what the AI found, let the employee adjust, then submit."""
+    analysis = draft["analysis"]
+
+    with st.container(key="draft_summary"):
+        st.markdown(
+            f"""
+            <div class="om-ticket-title">{html.escape(draft['title'])}</div>
+            <div class="om-ticket-desc">{html.escape(draft['description'])}</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    for problem in analysis["problems"]:
+        st.warning(f"{problem} Is Ollama running?", icon=":material/warning:")
+    if analysis["similar"]:
+        similar_card(analysis["similar"])
+    if analysis["fix"]:
+        fix_card(analysis["fix"])
+
+    ai_category, ai_urgency = analysis["category"], analysis["urgency"]
+    urgency_keys = list(URGENCIES)
+    with st.form("confirm_ticket"):
+        left, right = st.columns(2)
+        category = left.selectbox(
+            "Category",
+            TICKET_CATEGORIES,
+            index=TICKET_CATEGORIES.index(ai_category),
+            format_func=lambda c: f"{c}  ✨ AI suggestion" if c == ai_category else c,
+        )
+        urgency = right.selectbox(
+            "Urgency",
+            urgency_keys,
+            index=urgency_keys.index(ai_urgency),
+            format_func=lambda u: (
+                f"{URGENCIES[u]}  ✨ AI suggestion" if u == ai_urgency else URGENCIES[u]
+            ),
+        )
+        st.caption("✨ Suggested by the AI. Change them if they're not right.")
+        submit_label = "Submit anyway" if analysis["similar"] else "Submit ticket"
+        submitted = st.form_submit_button(
+            submit_label, type="primary", icon=":material/send:", width="stretch"
+        )
+
+    back, cancel = st.columns(2)
+    if back.button("Edit description", icon=":material/edit:", width="stretch"):
+        draft["step"] = "describe"
+        st.rerun()
+    if cancel.button("Cancel", icon=":material/close:", width="stretch"):
+        st.session_state.pop(DRAFT, None)
+        st.rerun()
+
+    if submitted:
+        ticket_id, error = create_ticket(
+            user, draft["title"], draft["description"], category, urgency, ai_urgency=ai_urgency
+        )
+        if error:
+            st.error(error, icon=":material/error:")
+        else:
+            st.session_state.pop(DRAFT, None)
+            st.session_state.helpdesk_message = (
+                f"Ticket #{ticket_id} created. You can follow it under My tickets."
+            )
+            st.rerun()
+
+
 tickets = list_tickets(user)
 
 # ---------- Admin view ----------
@@ -177,29 +364,11 @@ else:
     new_tab, mine_tab = st.tabs(["➕ New ticket", f"📋 My tickets ({len(tickets)})"])
 
     with new_tab:
-        with st.form("new_ticket", clear_on_submit=True):
-            title = st.text_input(
-                "Title", max_chars=120, placeholder="e.g. Can't connect to office Wi-Fi"
-            )
-            category = st.selectbox("Category", TICKET_CATEGORIES)
-            description = st.text_area(
-                "Description",
-                max_chars=4000,
-                height=140,
-                placeholder="What happened? When did it start? Any error message?",
-            )
-            submitted = st.form_submit_button(
-                "Submit ticket", type="primary", icon=":material/send:", width="stretch"
-            )
-        if submitted:
-            ticket_id, error = create_ticket(user, title, description, category)
-            if error:
-                st.error(error, icon=":material/error:")
-            else:
-                st.session_state.helpdesk_message = (
-                    f"Ticket #{ticket_id} created. You can follow it under My tickets."
-                )
-                st.rerun()
+        draft = st.session_state.get(DRAFT)
+        if draft and draft["step"] == "review":
+            review_step(draft)
+        else:
+            describe_step()
 
     with mine_tab:
         if not tickets:

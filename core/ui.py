@@ -104,12 +104,17 @@ def typing_effect(text: str, delay: float = 0.025):
             time.sleep(delay)
 
 
-THINKING_HTML = """
+def thinking_html(text: str) -> str:
+    """Three bouncing dots with a short message, shown while the AI is working."""
+    return f"""
 <div class="om-thinking">
   <span class="om-dots"><span></span><span></span><span></span></span>
-  <span>Searching your documents…</span>
+  <span>{html.escape(text)}</span>
 </div>
 """
+
+
+THINKING_HTML = thinking_html("Searching your documents…")
 
 
 STATUS_ICONS = {"open": "●", "in_progress": "◐", "closed": "✓"}
@@ -119,6 +124,19 @@ def status_badge(status: str, label: str) -> str:
     """Coloured pill for a ticket status: red Open, yellow In Progress, green Closed."""
     icon = STATUS_ICONS.get(status, "●")
     return f'<span class="om-status om-status-{status}">{icon} {html.escape(label)}</span>'
+
+
+URGENCY_ICONS = {"high": "🔥", "medium": "⚡", "low": "🌱"}
+
+
+def urgency_tag(urgency: str, label: str, title: str = "") -> str:
+    """Coloured tag for urgency: High, Medium or Low. `title` shows when you hover over it."""
+    icon = URGENCY_ICONS.get(urgency, "⚡")
+    hover = f' title="{html.escape(title)}"' if title else ""
+    return (
+        f'<span class="om-urgency om-urgency-{urgency}"{hover}>'
+        f"{icon} {html.escape(label)}</span>"
+    )
 
 
 def sources_html(sources: list[dict]) -> str:

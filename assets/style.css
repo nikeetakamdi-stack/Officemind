@@ -478,6 +478,65 @@ iframe[title="streamlit_lottie.streamlit_lottie"] { mix-blend-mode: lighten; }
 .om-stat-in_progress span { color: #FDE68A; }
 .om-stat-closed span      { color: #6EE7B7; }
 
+/* Badges on the right of a ticket card (urgency + status) */
+.om-badges { display: flex; flex: none; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+
+/* Urgency tags: square-ish so they don't look like the round status badges */
+.om-urgency {
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.om-urgency-high   { border-color: rgba(244, 63, 94, 0.5);  background: rgba(244, 63, 94, 0.18);  color: #FDA4AF; }
+.om-urgency-medium { border-color: rgba(251, 146, 60, 0.45); background: rgba(251, 146, 60, 0.14); color: #FDBA74; }
+.om-urgency-low    { border-color: rgba(56, 189, 248, 0.4);  background: rgba(56, 189, 248, 0.12); color: #7DD3FC; }
+
+/* AI result cards when raising a ticket */
+.st-key-draft_summary {
+  padding: 1rem 1.1rem 0.25rem;
+  border: 1px solid var(--om-border);
+  border-radius: var(--om-radius);
+  background: var(--om-surface);
+}
+.st-key-draft_summary .om-ticket-desc { margin-top: 0.5rem; }
+
+.om-ai-card {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--om-border);
+  border-radius: var(--om-radius);
+  animation: om-fade-in 350ms ease both;
+}
+.om-ai-card p { margin: 0.4rem 0 0; color: var(--om-muted); font-size: 0.88rem; }
+.om-ai-title { margin-bottom: 0.4rem; font-weight: 600; }
+.om-ai-similar { border-color: rgba(250, 204, 21, 0.35); background: rgba(250, 204, 21, 0.07); }
+.om-ai-fix     { border-color: rgba(34, 211, 238, 0.35); background: rgba(34, 211, 238, 0.06); }
+
+.om-ai-list { margin: 0; padding: 0; list-style: none; }
+.om-ai-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.92rem;
+}
+.om-ai-list .om-status { margin-left: auto; }
+
+.om-ai-steps { margin: 0.25rem 0 0.6rem; padding-left: 1.3rem; }
+.om-ai-steps li { margin: 0.15rem 0; }
+.om-ai-based {
+  margin-bottom: 0.3rem;
+  color: var(--om-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.om-evidence { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; }
+.om-evidence q { color: var(--om-muted); font-size: 0.85rem; font-style: italic; }
+
 .om-empty-state {
   padding: 2rem 1rem;
   border: 1px dashed var(--om-border);

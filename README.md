@@ -20,6 +20,13 @@ An AI workplace assistant that runs entirely on your own computer. No data leave
 - Admins see every ticket, move it Open → In Progress → Closed, and reply.
 - Tickets are stored in the same SQLite database as the users.
 
+**Helpdesk AI** (Phase 2, Step 2)
+- Before submitting, the AI suggests a category and urgency (Low / Medium / High); the employee can change them.
+- It warns "Similar issue already reported" when an open ticket describes the same problem.
+- It suggests a possible fix from past closed tickets with admin replies and from the uploaded documents, and shows the original text it's based on.
+- Admins see an urgency tag on every ticket, with High urgency first.
+- The similarity cut-offs are in `core/config.py` (`SIMILAR_TICKET_MIN`, `SOLVED_TICKET_MIN`).
+
 Coming later: Onboarding and Dashboard modules.
 
 ## How it works
@@ -93,7 +100,8 @@ officemind/
 │   │   ├── pdf_loader.py          reads and splits PDFs
 │   │   └── assistant.py           save, delete, search and answer
 │   └── helpdesk/
-│       └── tickets.py             create, list, update and reply to tickets
+│       ├── tickets.py             create, list, update and reply to tickets
+│       └── ai.py                  category/urgency, similar tickets, possible fix
 ├── data/                          the database is saved here (not uploaded to GitHub)
 └── requirements.txt               Python packages to install
 ```

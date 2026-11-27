@@ -1,4 +1,6 @@
-"""Talks to Ollama. Every module in OfficeMind uses these two functions."""
+"""Talks to Ollama. Every module in OfficeMind uses these functions."""
+
+import json
 
 import ollama
 
@@ -27,3 +29,22 @@ def chat(system_prompt: str, user_prompt: str) -> str:
         options={"temperature": 0},  # 0 = no creativity, same question gives same answer
     )
     return response["message"]["content"]
+
+
+def chat_json(system_prompt: str, user_prompt: str) -> dict:
+    """Like chat(), but the model must answer in JSON (data a program can read).
+    Returns {} if the reply can't be read."""
+    response = ollama.chat(
+        model=OLLAMA_CHAT_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        format="json",  # Ollama makes sure the reply is valid JSON
+        options={"temperature": 0},
+    )
+    try:
+        data = json.loads(response["message"]["content"])
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}

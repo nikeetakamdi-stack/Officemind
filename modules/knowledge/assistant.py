@@ -58,6 +58,25 @@ def delete_document(filename: str) -> None:
     collection.delete(where={"source": filename})
 
 
+def search_documents(text: str, limit: int = 3) -> list[dict]:
+    """Find the document pieces closest in meaning to `text` (used by other modules, e.g. Helpdesk).
+    Returns [{"text", "source", "page", "distance"}, ...], closest first. Smaller distance = closer."""
+    collection = get_collection(KNOWLEDGE_COLLECTION)
+    total = collection.count()
+    if total == 0:
+        return []
+    results = collection.query(
+        query_embeddings=embed([QUERY_PREFIX + text]),
+        n_results=min(limit, total),
+    )
+    return [
+        {"text": chunk, "source": m["source"], "page": m["page"], "distance": distance}
+        for chunk, m, distance in zip(
+            results["documents"][0], results["metadatas"][0], results["distances"][0]
+        )
+    ]
+
+
 def ask(question: str) -> tuple[str, list[dict]]:
     """Find the chunks most related to the question and let the AI answer from them.
     Returns (answer, sources), where each source is {"source": file, "page": number}."""

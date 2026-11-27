@@ -15,6 +15,12 @@ DATABASE_PATH = Path(os.environ.get("OFFICEMIND_DB", DATA_DIR / "officemind.db")
 # Helpdesk settings
 TICKET_CATEGORIES = ["Network", "Software", "Hardware", "Access", "Other"]
 
+# Helpdesk AI: how alike two tickets must be (0 = unrelated, 1 = identical).
+# Measured with nomic-embed-text: same problem ~0.71-0.77, different problems <= 0.66.
+SIMILAR_TICKET_MIN = 0.70  # show "Similar issue already reported" at or above this
+SOLVED_TICKET_MIN = 0.62  # past solved tickets the AI may learn a fix from
+FIX_DOCUMENT_MAX_DISTANCE = 0.5  # document pieces the AI may use (smaller = closer match)
+
 # Ollama models (both free and run on your own computer)
 OLLAMA_CHAT_MODEL = "llama3.2"  # writes the answers
 OLLAMA_EMBED_MODEL = "nomic-embed-text"  # turns text into numbers for searching
