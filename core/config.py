@@ -1,12 +1,19 @@
 """All OfficeMind settings in one place, so they are easy to find and change."""
 
+import os
 from pathlib import Path
 
 # Folders
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 CHROMA_DIR = DATA_DIR / "chroma"  # ChromaDB saves its database files here
-DATABASE_PATH = DATA_DIR / "officemind.db"  # SQLite file with user accounts
+
+# SQLite file with user accounts and helpdesk tickets.
+# For testing you can point it somewhere else with the OFFICEMIND_DB environment variable.
+DATABASE_PATH = Path(os.environ.get("OFFICEMIND_DB", DATA_DIR / "officemind.db"))
+
+# Helpdesk settings
+TICKET_CATEGORIES = ["Network", "Software", "Hardware", "Access", "Other"]
 
 # Ollama models (both free and run on your own computer)
 OLLAMA_CHAT_MODEL = "llama3.2"  # writes the answers

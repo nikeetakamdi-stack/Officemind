@@ -398,6 +398,94 @@ iframe[title="streamlit_lottie.streamlit_lottie"] { mix-blend-mode: lighten; }
   white-space: nowrap;
 }
 
+/* ---------- Helpdesk ---------- */
+/* Status badges: red Open, yellow In Progress, green Closed */
+.om-status {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.om-status-open        { border-color: rgba(248, 113, 113, 0.35); background: rgba(248, 113, 113, 0.14); color: #FCA5A5; }
+.om-status-in_progress { border-color: rgba(250, 204, 21, 0.35);  background: rgba(250, 204, 21, 0.12);  color: #FDE68A; }
+.om-status-closed      { border-color: rgba(52, 211, 153, 0.35);  background: rgba(52, 211, 153, 0.12);  color: #6EE7B7; }
+
+/* One card per ticket */
+[class*="st-key-ticket_"] {
+  margin-bottom: 0.25rem;
+  padding: 1rem 1.1rem 0.6rem;
+  border: 1px solid var(--om-border);
+  border-radius: var(--om-radius);
+  background: linear-gradient(180deg, var(--om-surface-2), var(--om-surface));
+  box-shadow: var(--om-shadow);
+  transition: transform var(--om-ease), box-shadow var(--om-ease);
+}
+[class*="st-key-ticket_"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--om-shadow-hover);
+}
+.om-ticket-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.om-ticket-title { font-weight: 600; font-size: 1rem; }
+.om-ticket-id { margin-right: 0.25rem; color: var(--om-muted); font-weight: 500; }
+.om-ticket-meta { margin-top: 0.25rem; color: var(--om-muted); font-size: 0.82rem; }
+
+/* Fold-out "Details" section inside a ticket */
+[class*="st-key-ticket_"] [data-testid="stExpander"] details {
+  border: 1px solid var(--om-border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.om-ticket-desc {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid var(--om-primary);
+  border-radius: 8px;
+  background: var(--om-surface);
+  white-space: pre-wrap;
+}
+
+/* Replies from the helpdesk */
+.om-reply {
+  margin: 0 0 0.6rem 1rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  border-radius: 12px 12px 12px 4px;
+  background: var(--om-primary-soft);
+}
+.om-reply-body { white-space: pre-wrap; }  /* keep the line breaks people type */
+.om-reply-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; font-size: 0.85rem; }
+.om-reply-head .om-role { margin-top: 0; }
+.om-reply-time { margin-left: auto; color: var(--om-muted); font-size: 0.75rem; }
+
+/* Admin summary: Open / In Progress / Closed counts */
+.om-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.om-stat {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--om-border);
+  border-radius: 14px;
+  background: var(--om-surface);
+  color: var(--om-muted);
+  font-size: 0.85rem;
+  transition: transform var(--om-ease);
+}
+.om-stat:hover { transform: translateY(-2px); }
+.om-stat span { display: block; font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
+.om-stat-open span        { color: #FCA5A5; }
+.om-stat-in_progress span { color: #FDE68A; }
+.om-stat-closed span      { color: #6EE7B7; }
+
+.om-empty-state {
+  padding: 2rem 1rem;
+  border: 1px dashed var(--om-border);
+  border-radius: var(--om-radius);
+  color: var(--om-muted);
+  text-align: center;
+}
+
 /* ---------- Messages (success / warning / error) ---------- */
 [data-testid="stAlert"] { border-radius: 12px; }
 

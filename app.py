@@ -39,18 +39,21 @@ st.write("")
 st.markdown("### Modules")
 
 # ---------- Module cards (two per row) ----------
+# (icon, title, description, page file or None if it's not built yet)
 MODULES = [
-    ("📚", "Knowledge Assistant", "Ask questions about your PDFs and see the exact source.", True),
-    ("🎧", "Helpdesk", "Answer common IT and HR questions automatically.", False),
-    ("🚀", "Onboarding", "Guide new team members through their first weeks.", False),
-    ("📊", "Dashboard", "See how OfficeMind is used across the team.", False),
+    ("📚", "Knowledge Assistant", "Ask questions about your PDFs and see the exact source.",
+     "pages/1_Knowledge_Assistant.py"),
+    ("🎧", "Helpdesk", "Raise IT tickets and follow them until they're solved.",
+     "pages/2_Helpdesk.py"),
+    ("🚀", "Onboarding", "Guide new team members through their first weeks.", None),
+    ("📊", "Dashboard", "See how OfficeMind is used across the team.", None),
 ]
 
 for row_start in range(0, len(MODULES), 2):
     columns = st.columns(2)
-    for column, (icon, title, text, ready) in zip(columns, MODULES[row_start : row_start + 2]):
+    for column, (icon, title, text, page) in zip(columns, MODULES[row_start : row_start + 2]):
         # The key gives the box a CSS class (st-key-card_...) so style.css can style it as a card
-        key = f"card_{title.lower().replace(' ', '_')}" if ready else f"card_soon_{title.lower()}"
+        key = f"card_{title.lower().replace(' ', '_')}" if page else f"card_soon_{title.lower()}"
         with column.container(key=key):
             st.markdown(
                 f"""
@@ -60,9 +63,7 @@ for row_start in range(0, len(MODULES), 2):
                 """,
                 unsafe_allow_html=True,
             )
-            if ready:
-                st.page_link(
-                    "pages/1_Knowledge_Assistant.py", label="Open", icon=":material/open_in_new:"
-                )
+            if page:
+                st.page_link(page, label="Open", icon=":material/open_in_new:")
             else:
                 st.markdown('<span class="om-badge">Coming soon</span>', unsafe_allow_html=True)

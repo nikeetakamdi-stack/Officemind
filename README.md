@@ -15,7 +15,12 @@ An AI workplace assistant that runs entirely on your own computer. No data leave
 - The **first** account created becomes the **admin**; everyone after is an **employee**.
 - Admins can upload and delete PDFs. Employees can ask questions.
 
-Coming later: Helpdesk, Onboarding and Dashboard modules.
+**Helpdesk** (Phase 2, Step 1)
+- Employees raise tickets (title, description, category) and follow their status and replies.
+- Admins see every ticket, move it Open → In Progress → Closed, and reply.
+- Tickets are stored in the same SQLite database as the users.
+
+Coming later: Onboarding and Dashboard modules.
 
 ## How it works
 
@@ -74,7 +79,8 @@ officemind/
 │   └── welcome.json               the Lottie welcome animation
 ├── pages/
 │   ├── 0_Login.py                 login + sign-up page
-│   └── 1_Knowledge_Assistant.py   upload + chat page
+│   ├── 1_Knowledge_Assistant.py   upload + chat page
+│   └── 2_Helpdesk.py              tickets page
 ├── core/                          shared code every module uses
 │   ├── auth.py                    sign up, log in, password hashing
 │   ├── config.py                  all settings (models, chunk size, ...)
@@ -83,9 +89,11 @@ officemind/
 │   ├── ui.py                      shared styles, sidebar menu, typing effect
 │   └── vector_store.py            opens the ChromaDB database
 ├── modules/
-│   └── knowledge/
-│       ├── pdf_loader.py          reads and splits PDFs
-│       └── assistant.py           save, delete, search and answer
+│   ├── knowledge/
+│   │   ├── pdf_loader.py          reads and splits PDFs
+│   │   └── assistant.py           save, delete, search and answer
+│   └── helpdesk/
+│       └── tickets.py             create, list, update and reply to tickets
 ├── data/                          the database is saved here (not uploaded to GitHub)
 └── requirements.txt               Python packages to install
 ```

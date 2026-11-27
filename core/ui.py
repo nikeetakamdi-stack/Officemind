@@ -57,7 +57,8 @@ def sidebar_menu() -> None:
             label="Knowledge Assistant",
             icon=":material/menu_book:",
         )
-        # Later modules get one line each here, e.g. Helpdesk, Onboarding, Dashboard
+        st.page_link("pages/2_Helpdesk.py", label="Helpdesk", icon=":material/support_agent:")
+        # Later modules get one line each here, e.g. Onboarding, Dashboard
 
         user = current_user()
         if user:
@@ -109,6 +110,15 @@ THINKING_HTML = """
   <span>Searching your documents…</span>
 </div>
 """
+
+
+STATUS_ICONS = {"open": "●", "in_progress": "◐", "closed": "✓"}
+
+
+def status_badge(status: str, label: str) -> str:
+    """Coloured pill for a ticket status: red Open, yellow In Progress, green Closed."""
+    icon = STATUS_ICONS.get(status, "●")
+    return f'<span class="om-status om-status-{status}">{icon} {html.escape(label)}</span>'
 
 
 def sources_html(sources: list[dict]) -> str:
