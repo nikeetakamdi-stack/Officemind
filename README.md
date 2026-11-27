@@ -33,6 +33,14 @@ Then copy `yolov8n.onnx` into the `models/` folder. OfficeMind runs it with onnx
 
 **Limits:** these features make leaks harder and traceable. They can't stop a camera pointed at the screen, screen recorders, browser developer tools, or someone with access sharing content themselves. Uploaded PDF text in the search store (`data/chroma`) isn't encrypted, so protect the computer itself.
 
+## Team Chat
+
+- `#general` (everyone), channels admins create (e.g. `#it`, `#hr`) with chosen members, and one-to-one chats.
+- Text, images and files (up to 10 MB); replies, pinned messages, search, read ticks (✓ sent, ✓✓ read), online/offline, unread badges.
+- Voice and video calls with **Jitsi Meet** in a private, random room per call; "call started/ended" appears in the chat.
+- Messages and file names are encrypted in the database, attachments are encrypted on disk (`data/chat_files/`), and only members can read a chat. Chats and calls appear in the Activity Log (without message text).
+- **Limits:** new messages appear within ~3 seconds (Streamlit checks regularly, it isn't instant); no "typing…" indicator, because Streamlit can't see keystrokes until a message is sent; calls run on the Jitsi server (`meet.jit.si` by default, which may ask the first person to sign in and limits embedded calls), so set `OFFICEMIND_JITSI` to your own Jitsi server to keep calls inside the company; screen sharing needs **New window**, because browsers block it inside embedded frames.
+
 ## What it does
 
 **Knowledge Assistant** (Phase 1, Step 1)

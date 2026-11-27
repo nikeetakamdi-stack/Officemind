@@ -35,3 +35,5 @@ Thumbs.db
 models/*.onnx
 # Encryption key: never upload; keep a backup
 data/secret.key
+# Team Chat attachments (encrypted, but still private company data)
+data/chat_files/

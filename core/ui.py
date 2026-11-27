@@ -32,6 +32,7 @@ NAV = [
     ("pages/1_Knowledge_Assistant.py", "Knowledge Assistant", "menu_book", False),
     ("pages/2_Helpdesk.py", "Helpdesk", "support_agent", False),
     ("pages/3_Onboarding.py", "Onboarding", "task_alt", False),
+    ("pages/7_Team_Chat.py", "Team Chat", "forum", False),
     ("pages/4_Dashboard.py", "Dashboard", "monitoring", True),
     ("pages/6_Security.py", "Security", "shield", True),
 ]
@@ -143,6 +144,8 @@ def page_setup(page: str, title: str, icon_name: str, subtitle: str = "", header
                        initial_sidebar_state="expanded")
     apply_style()
     user = require_login()  # not logged in? -> login page
+    from modules.chat.store import touch_presence
+    touch_presence(user)  # shows this person as "online" in Team Chat
     _screen_protection(user)
     top_bar(user)
     sidebar_menu(user, page)
@@ -245,6 +248,10 @@ def sidebar_menu(user: dict, current: str) -> None:
                     admin_label_shown = True
             # The container's name says whether this is the current page; style.css highlights it
             active = "active" if page == current else ""
+            if page == "pages/7_Team_Chat.py":
+                from modules.chat.store import unread_total
+                unread = unread_total(user)
+                label = f"{label}  ({unread})" if unread else label  # unread messages badge
             with st.container(key=f"nav{active}_{icon_name}"):
                 st.page_link(page, label=label, icon=f":material/{icon_name}:")
         st.markdown('<div class="om-nav-end"></div>', unsafe_allow_html=True)

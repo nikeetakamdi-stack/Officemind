@@ -32,6 +32,13 @@ ACTIONS = {
     "secure_mode": ("Secure mode", "videocam"),
     "user_change": ("Changed a user", "manage_accounts"),
     "settings": ("Changed a setting", "settings"),
+    "chat_message": ("Sent a chat message", "chat"),
+    "chat_file": ("Shared a file in chat", "attach_file"),
+    "chat_download": ("Opened a chat file", "file_open"),
+    "chat_pin": ("Pinned a message", "push_pin"),
+    "channel_change": ("Changed a channel", "group"),
+    "call_start": ("Started a call", "call"),
+    "call_end": ("Ended a call", "call_end"),
 }
 LEVELS = ("info", "warning", "critical")
 

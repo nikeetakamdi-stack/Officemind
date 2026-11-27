@@ -27,6 +27,15 @@ IDLE_TIMEOUT_MINUTES = 30      # automatic sign-out after this long without acti
 SECRET_KEY_PATH = DATA_DIR / "secret.key"
 PHONE_MIN_CONFIDENCE = 0.45    # Secure mode: how sure YOLO must be that it sees a phone
 YOLO_MODEL_PATH = PROJECT_ROOT / "models" / "yolov8n.onnx"
+# ---------- Team Chat ----------
+CHAT_FILES_DIR = DATA_DIR / "chat_files"   # attachments, stored encrypted
+CHAT_MAX_FILE_MB = 10
+CHAT_REFRESH_SECONDS = 3                   # how often an open chat checks for new messages
+ONLINE_SECONDS = 90                        # "online" = active in the last 90 seconds
+# Calls use Jitsi Meet. meet.jit.si is the free public server; a company can run its own
+# Jitsi server and put its address here, so calls never leave the company network.
+JITSI_DOMAIN = os.environ.get("OFFICEMIND_JITSI", "meet.jit.si")
+
 # Alerts
 FAILED_LOGIN_ALERT = 3         # failed logins for one username within 15 minutes
 CONFIDENTIAL_PROBE_ALERT = 3   # questions touching confidential documents within 24 hours
