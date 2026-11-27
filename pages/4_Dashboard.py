@@ -252,3 +252,39 @@ with body.container():
                     for q in missing
                 )
                 st.markdown(f'<ul class="om-q-list">{items}</ul>', unsafe_allow_html=True)
+
+    # ---------- Code quality leaderboard ----------
+    from modules.codereview.store import leaderboard, review_totals
+
+    board = leaderboard(days)
+    totals = review_totals(days)
+    note = (f"{totals['reviews']} code review(s) · average {totals['average']:g}/10" if totals["reviews"]
+            else "No code reviews in this period")
+    if totals["secrets"]:
+        note += f" · {totals['secrets']} secret(s) found in code"
+    with chart_card("code", "Code quality leaderboard", note + " · average review score per person"):
+        if not board:
+            no_data("Nobody has reviewed code in this period yet.")
+        else:
+            rows = list(reversed(board))  # best at the top
+            fig = go.Figure(
+                go.Bar(
+                    y=[f"{r['name']} · {r['department']}" for r in rows], x=[r["average"] for r in rows],
+                    orientation="h", width=0.5, marker=dict(color=T["accent"]),
+                    text=[f"{r['average']:g} · {r['reviews']} review{'s' if r['reviews'] != 1 else ''}" for r in rows],
+                    textposition="outside", textfont=dict(color=T["text"]), cliponaxis=False,
+                    customdata=[[r["best"], r["first"], r["latest"], r["critical"]] for r in rows],
+                    hovertemplate=("%{y}<br><b>%{x}</b>/10 average · best %{customdata[0]}<br>"
+                                   "first %{customdata[1]} → latest %{customdata[2]} · "
+                                   "%{customdata[3]} critical problems<extra></extra>"),
+                )
+            )
+            style(fig, height=max(160, 42 * len(rows) + 40))
+            fig.update_xaxes(range=[0, 13], showticklabels=False)  # room for the labels
+            fig.update_yaxes(showgrid=False, tickfont=dict(color=T["text"]), automargin=True)
+            st.plotly_chart(fig, config=CHART_CONFIG, key="plot_code")
+            improving = [r for r in board if (r["change"] or 0) > 0]
+            if improving:
+                st.markdown(" ".join(
+                    f'<span class="om-chip">{icon("trending_up", 14)}{html.escape(r["name"])} '
+                    f'{r["first"]:g} → {r["latest"]:g}</span>' for r in improving), unsafe_allow_html=True)

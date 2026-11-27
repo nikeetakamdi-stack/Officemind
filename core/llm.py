@@ -18,20 +18,21 @@ def embed(texts: list[str]) -> list[list[float]]:
     return embeddings
 
 
-def chat(system_prompt: str, user_prompt: str) -> str:
-    """Send a prompt to the chat model and return its reply as text."""
+def chat(system_prompt: str, user_prompt: str, options: dict | None = None) -> str:
+    """Send a prompt to the chat model and return its reply as text.
+    `options` can change model settings, e.g. {"num_predict": 2000} (longest reply)."""
     response = ollama.chat(
         model=OLLAMA_CHAT_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        options={"temperature": 0},  # 0 = no creativity, same question gives same answer
+        options={"temperature": 0, **(options or {})},  # 0 = no creativity, same question gives same answer
     )
     return response["message"]["content"]
 
 
-def chat_json(system_prompt: str, user_prompt: str) -> dict:
+def chat_json(system_prompt: str, user_prompt: str, options: dict | None = None) -> dict:
     """Like chat(), but the model must answer in JSON (data a program can read).
     Returns {} if the reply can't be read."""
     response = ollama.chat(
@@ -41,7 +42,7 @@ def chat_json(system_prompt: str, user_prompt: str) -> dict:
             {"role": "user", "content": user_prompt},
         ],
         format="json",  # Ollama makes sure the reply is valid JSON
-        options={"temperature": 0},
+        options={"temperature": 0, **(options or {})},
     )
     try:
         data = json.loads(response["message"]["content"])

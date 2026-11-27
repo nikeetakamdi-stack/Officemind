@@ -14,6 +14,7 @@ PAGE_WORDS = {
     "pages/3_Onboarding.py": "onboarding checklist tasks new employee first week",
     "pages/4_Dashboard.py": "dashboard stats charts report excel export manager",
     "pages/7_Team_Chat.py": "chat message team channel call video voice meeting dm",
+    "pages/8_Code_Review.py": "code review bug python javascript java sql security score test explain convert",
     "pages/6_Security.py": "security activity log alerts users access lock unlock secure mode audit",
 }
 

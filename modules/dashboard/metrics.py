@@ -19,6 +19,7 @@ from modules.knowledge.assistant import list_documents
 from modules.knowledge.question_log import create_question_table, normalize
 from modules.onboarding.checklists import STATUSES as ONBOARDING_STATUSES
 from modules.onboarding.checklists import progress_overview
+from modules.codereview.store import leaderboard
 
 RANGES = {"7": ("Last 7 days", 7), "30": ("Last 30 days", 30), "all": ("All time", None)}
 
@@ -256,6 +257,14 @@ def excel_report(admin: dict, days: int | None, range_label: str) -> bytes:
                 {"Question": q["question"], "Times asked": q["times"], "Answered": q["answered"],
                  "Last asked (UTC)": q["last_asked"]}
                 for q in top_questions(days, limit=50)
+            ]
+        ),
+        "Code quality": pd.DataFrame(
+            [
+                {"Person": r["name"], "Department": r["department"], "Reviews": r["reviews"],
+                 "Average score": r["average"], "Best score": r["best"], "First score": r["first"],
+                 "Latest score": r["latest"], "Critical problems": r["critical"], "Secrets found": r["secrets"]}
+                for r in leaderboard(days, limit=500)
             ]
         ),
         "Unanswered": pd.DataFrame(

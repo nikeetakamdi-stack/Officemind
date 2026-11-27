@@ -39,6 +39,9 @@ ACTIONS = {
     "channel_change": ("Changed a channel", "group"),
     "call_start": ("Started a call", "call"),
     "call_end": ("Ended a call", "call_end"),
+    "code_review": ("Reviewed code", "rate_review"),
+    "code_tool": ("Used a code tool", "build"),
+    "secret_in_code": ("Secret found in code", "key"),
 }
 LEVELS = ("info", "warning", "critical")
 

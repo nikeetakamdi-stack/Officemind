@@ -33,6 +33,7 @@ NAV = [
     ("pages/2_Helpdesk.py", "Helpdesk", "support_agent", False),
     ("pages/3_Onboarding.py", "Onboarding", "task_alt", False),
     ("pages/7_Team_Chat.py", "Team Chat", "forum", False),
+    ("pages/8_Code_Review.py", "Code Review", "code", False),
     ("pages/4_Dashboard.py", "Dashboard", "monitoring", True),
     ("pages/6_Security.py", "Security", "shield", True),
 ]

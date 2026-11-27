@@ -41,6 +41,23 @@ Then copy `yolov8n.onnx` into the `models/` folder. OfficeMind runs it with onnx
 - Messages and file names are encrypted in the database, attachments are encrypted on disk (`data/chat_files/`), and only members can read a chat. Chats and calls appear in the Activity Log (without message text).
 - **Limits:** new messages appear within ~3 seconds (Streamlit checks regularly, it isn't instant); no "typing…" indicator, because Streamlit can't see keystrokes until a message is sent; calls run on the Jitsi server (`meet.jit.si` by default, which may ask the first person to sign in and limits embedded calls), so set `OFFICEMIND_JITSI` to your own Jitsi server to keep calls inside the company; screen sharing needs **New window**, because browsers block it inside embedded frames.
 
+## Code Review (Phase 5)
+
+- Paste code or upload a file (`.py`, `.js`, `.java`, `.sql`); the language is detected automatically or chosen from a list.
+- Problems are shown as cards grouped by **Critical**, **Warning** and **Suggestion**, each with the line, the problem in simple words and a fix, plus a **score out of 10**.
+- **Show improved code** puts the fixed version next to the original.
+- **Smart tools:** explain the code line by line, Big O time and space (with faster approaches), unit tests (pytest, Jest, JUnit), comments and docstrings, converting to another language, and **Compare versions** (what changed and whether the quality went up).
+- **Security:** finds passwords, API keys and tokens in code, SQL injection, unsafe input handling (eval, shell commands, unsafe loading of data), and risky or outdated libraries.
+- **Team:** admins set company coding rules (naming style, no print statements, longest function, longest line, docstrings, extra rules in plain words); each review is saved in **My history**; the manager dashboard has a **code quality leaderboard**; reviews and tool use are in the Activity Log.
+
+How it decides, and its limits:
+- **Exact checks first.** Most problems are found by fixed rules (Python's own parser, text patterns for the other languages), so they're always right and always the same. The AI (llama3.2) adds extra findings, marked "AI · please check".
+- **The AI's work is checked.** An AI finding must quote the real line, or it's dropped, and the AI can never mark anything Critical. Improved, commented and converted code is checked (does it run, are all names defined, is no function lost); problems are shown as warnings. Comments are put into your *unchanged* code by the program, so they can't change what it does.
+- **Secrets never leave.** They're replaced by `****` before the AI sees the code and before anything is saved, and the admin gets an alert.
+- **Scores:** Critical −2.5, Warning −1, Suggestion −0.3 (at most −2); any Critical caps the score at 6. Compare uses only the exact checks, so both versions are judged the same way.
+- **Not covered:** OfficeMind never runs the code you paste (that would be unsafe), so generated tests are drafts: run them yourself. It can't see which library *versions* you install, so use `pip-audit` / `npm audit` for that. llama3.2 is small: AI findings, explanations and Big O can be wrong, and a review takes about 5–30 seconds.
+- History: you see only your own reviews (admins see scores on the leaderboard, not other people's code). Code in history is encrypted.
+
 ## What it does
 
 **Knowledge Assistant** (Phase 1, Step 1)
@@ -143,7 +160,10 @@ officemind/
 │   ├── 2_Helpdesk.py              tickets page
 │   ├── 3_Onboarding.py            checklists, progress and assistant
 │   ├── 4_Dashboard.py             manager dashboard (admins only)
-│   └── 5_Search.py                search results (opened from the top bar)
+│   ├── 5_Search.py                search results (opened from the top bar)
+│   ├── 6_Security.py              security: alerts, activity log, users, settings (admins)
+│   ├── 7_Team_Chat.py             channels, direct messages and calls
+│   └── 8_Code_Review.py           code review, smart tools, compare, history, company rules
 ├── core/                          shared code every module uses
 │   ├── auth.py                    sign up, log in, password hashing
 │   ├── config.py                  all settings (models, chunk size, ...)
@@ -163,6 +183,15 @@ officemind/
 │   │   └── ai.py                  category/urgency, similar tickets, possible fix
 │   ├── onboarding/
 │   │   └── checklists.py          checklists, tasks, assignments and progress
+│   ├── codereview/
+│   │   ├── checks.py              exact rule checks (bugs, practices, company rules)
+│   │   ├── security.py            secrets, injection, risky libraries
+│   │   ├── ai.py                  AI review and improved code (with checking)
+│   │   ├── tools.py               explain, Big O, tests, comments, convert, compare
+│   │   ├── verify.py              checks code the AI wrote
+│   │   ├── review.py              puts a review together and scores it
+│   │   ├── languages.py           detects the language
+│   │   └── store.py               history, company rules, leaderboard
 │   ├── home.py                    quick stats for the home page
 │   ├── notifications.py           what the notification bell shows
 │   └── search.py                  the search box

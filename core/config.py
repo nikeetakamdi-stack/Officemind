@@ -59,3 +59,9 @@ CHUNK_SIZE = 1000  # characters per piece of text
 CHUNK_OVERLAP = 200  # characters shared between neighbouring pieces
 TOP_K = 4  # how many pieces to give the AI for each question
 SOURCE_MARGIN = 0.1  # show a source only if it matched almost as well as the best one
+
+# ---------- Code Review ----------
+CODE_LANGUAGES = {"python": "Python", "javascript": "JavaScript", "java": "Java", "sql": "SQL"}
+CODE_EXTENSIONS = {".py": "python", ".js": "javascript", ".java": "java", ".sql": "sql"}
+CODE_MAX_KB = 200          # biggest file you can paste or upload
+CODE_AI_MAX_LINES = 400    # the AI reads at most this many lines (rule checks read everything)

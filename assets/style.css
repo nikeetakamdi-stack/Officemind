@@ -907,3 +907,109 @@ body.om-blurred::after {
 /* Call in progress */
 .st-key-panel_call { margin-bottom: 0.75rem; border-color: var(--green-border); background: var(--green-bg); }
 .om-call-live { color: var(--green-text); font-weight: 700; }
+
+/* ===================== Code Review ===================== */
+.st-key-cr_input { padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--shadow-1); margin-bottom: 1rem; }
+.st-key-cr_input textarea { font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace; font-size: 13px; }
+
+/* Score: a ring that fills up to the score */
+.om-cr-score-card { display: flex; align-items: center; gap: 1.1rem; margin: 0.25rem 0 1rem; padding: 1rem 1.2rem;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-1); }
+.om-cr-ring { --tone: var(--brand); display: grid; flex: none; place-items: center; width: 92px; height: 92px;
+  border-radius: 50%; background: conic-gradient(var(--tone) calc(var(--p) * 1%), var(--surface-3) 0); }
+.om-cr-ring > div { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%;
+  background: var(--surface); line-height: 1.05; }
+.om-cr-ring b { color: var(--text); font-size: 1.6rem; }
+.om-cr-ring span { color: var(--muted); font-size: var(--fs-xs); }
+.om-cr-ring-green { --tone: var(--green-text); }
+.om-cr-ring-amber { --tone: var(--amber-text); }
+.om-cr-ring-red { --tone: var(--red-text); }
+.om-cr-score-word { color: var(--text); font-size: var(--fs-lg); font-weight: 700; }
+.om-cr-counts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.45rem; }
+.om-cr-count { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border: 1px solid;
+  border-radius: 999px; font-size: var(--fs-xs); font-weight: 600; }
+.om-cr-count-critical, .om-cr-critical .om-cr-sev, .om-cr-group-critical .msr { color: var(--red-text); }
+.om-cr-count-warning, .om-cr-warning .om-cr-sev, .om-cr-group-warning .msr { color: var(--amber-text); }
+.om-cr-count-suggestion, .om-cr-suggestion .om-cr-sev, .om-cr-group-suggestion .msr { color: var(--blue-text); }
+.om-cr-count-critical { border-color: var(--red-border); background: var(--red-bg); }
+.om-cr-count-warning { border-color: var(--amber-border); background: var(--amber-bg); }
+.om-cr-count-suggestion { border-color: var(--blue-border); background: var(--blue-bg); }
+
+/* Finding cards, grouped by severity (colour + icon + word) */
+.om-cr-group { display: flex; align-items: center; gap: 0.4rem; margin: 1.1rem 0 0.5rem; color: var(--text);
+  font-size: var(--fs-md); font-weight: 700; }
+.om-cr-card { margin-bottom: 0.6rem; padding: 0.75rem 0.9rem; border: 1px solid var(--border);
+  border-left: 4px solid var(--blue-text); border-radius: var(--radius-sm); background: var(--surface);
+  box-shadow: var(--shadow-1); animation: om-enter 240ms ease both; }
+.om-cr-critical { border-left-color: var(--red-text); }
+.om-cr-warning { border-left-color: var(--amber-text); }
+.om-cr-card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.45rem; }
+.om-cr-sev { display: inline-flex; align-items: center; gap: 3px; font-size: var(--fs-sm); font-weight: 700; }
+.om-cr-source { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; color: var(--muted);
+  font-size: var(--fs-xs); }
+.om-cr-source-ai { color: var(--brand-text); }
+.om-cr-line { margin: 0 0 0.45rem; padding: 0.35rem 0.6rem; overflow-x: auto; border-radius: 6px;
+  background: var(--surface-3); color: var(--text); font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 12.5px; white-space: pre; }
+.om-cr-line span { display: inline-block; min-width: 2.2em; margin-right: 0.6rem; color: var(--muted); }
+.om-cr-problem { color: var(--text); font-size: var(--fs-md); }
+.om-cr-fix { display: flex; gap: 0.4rem; margin-top: 0.35rem; color: var(--text-2); font-size: var(--fs-sm); }
+.om-cr-fix .msr { margin-top: 2px; color: var(--green-text); }
+.om-cr-card code, .om-cr-tool code { padding: 0 4px; border-radius: 4px; background: var(--surface-3);
+  color: var(--text); font-size: 0.9em; }
+
+.om-cr-compare-head { display: flex; align-items: center; gap: 0.4rem; margin: 1rem 0 0.4rem; color: var(--text);
+  font-size: var(--fs-md); }
+.om-cr-pane-title { margin-bottom: 0.3rem; color: var(--text-2); font-size: var(--fs-sm); font-weight: 700; }
+
+/* Secrets warning */
+.om-cr-secret { display: flex; gap: 0.7rem; margin: 0.25rem 0 0.9rem; padding: 0.85rem 1rem; border: 1px solid var(--red-border);
+  border-radius: var(--radius); background: var(--red-bg); color: var(--text); font-size: var(--fs-sm); }
+.om-cr-secret > .msr { color: var(--red-text); font-size: 26px; }
+.om-cr-secret-title { color: var(--red-text); font-size: var(--fs-md); font-weight: 700; }
+.om-cr-secret ul { margin: 0.3rem 0 0.4rem 1.1rem; padding: 0; }
+.om-cr-secret code { padding: 0 4px; border-radius: 4px; background: var(--surface); }
+
+/* Smart tools */
+.om-cr-tools-title { display: flex; align-items: center; gap: 0.45rem; margin: 1.6rem 0 0.5rem; color: var(--text);
+  font-size: var(--fs-lg); font-weight: 700; }
+.om-cr-tools-title .om-muted { font-size: var(--fs-sm); font-weight: 400; }
+.st-key-cr_tools { padding: 0.8rem 1rem; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); }
+.om-cr-tool { padding: 0.8rem 0.95rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); box-shadow: var(--shadow-1); }
+.om-cr-step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem; align-items: start;
+  padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+.om-cr-step:last-child { border-bottom: none; }
+.om-cr-step .om-cr-line { margin: 0; }
+.om-cr-step-text { color: var(--text); font-size: var(--fs-sm); }
+@media (max-width: 720px) { .om-cr-step { grid-template-columns: 1fr; gap: 0.25rem; } }
+.om-cr-bigo-tiles { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.6rem; }
+.om-cr-bigo-tiles div { min-width: 130px; padding: 0.5rem 0.8rem; border: 1px solid var(--blue-border);
+  border-radius: var(--radius-sm); background: var(--blue-bg); }
+.om-cr-bigo-tiles span { display: block; color: var(--muted); font-size: var(--fs-xs); }
+.om-cr-bigo-tiles b { color: var(--blue-text); font-size: 1.25rem; font-family: Consolas, monospace; }
+.om-cr-bigo-check { display: flex; align-items: center; gap: 4px; margin-top: 0.35rem; font-size: var(--fs-sm); }
+
+/* Compare versions */
+.om-cr-compare { gap: 0.9rem; }
+.om-cr-vs { display: grid; place-items: center; min-width: 74px; padding: 0.4rem 0.6rem; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface-2); }
+.om-cr-vs span { color: var(--muted); font-size: var(--fs-xs); }
+.om-cr-vs b { color: var(--text); font-size: 1.5rem; }
+.om-cr-arrow { color: var(--muted); }
+.om-cr-verdict { padding: 2px 10px; border: 1px solid; border-radius: 999px; font-size: var(--fs-md); }
+.om-cr-verdict-green { border-color: var(--green-border); background: var(--green-bg); color: var(--green-text); }
+.om-cr-verdict-red { border-color: var(--red-border); background: var(--red-bg); color: var(--red-text); }
+.om-cr-verdict-grey { border-color: var(--grey-border); background: var(--grey-bg); color: var(--grey-text); }
+.om-diff { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+  font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px; }
+.om-diff > div { padding: 1px 0.7rem; white-space: pre; color: var(--text); }
+.om-diff span { display: inline-block; width: 1.2em; color: var(--muted); }
+.om-diff-add { background: var(--green-bg); }
+.om-diff-add span { color: var(--green-text); }
+.om-diff-del { background: var(--red-bg); }
+.om-diff-del span { color: var(--red-text); }
+.om-diff-hunk { padding: 3px 0.7rem !important; background: var(--surface-3); color: var(--muted) !important;
+  font-family: Inter, "Segoe UI", sans-serif; font-size: var(--fs-xs); }
