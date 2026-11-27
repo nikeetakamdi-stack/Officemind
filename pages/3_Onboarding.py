@@ -23,8 +23,9 @@ from core.ui import (
     stat_cards,
     typing_effect,
 )
-from modules.knowledge.assistant import ask, document_path, list_documents
+from modules.knowledge.assistant import ask, can_open_document, document_path, list_documents
 from modules.knowledge.question_log import log_question
+from modules.security.secure_mode import confidential_allowed
 from modules.onboarding.checklists import (
     STATUSES,
     add_task,
@@ -329,7 +330,11 @@ def task_row(assignment: dict, task: dict) -> None:
             )
         if task["document"]:
             path = document_path(task["document"])
-            if path.exists():
+            if not can_open_document(user, task["document"]):
+                # The task links a document this person isn't allowed to open
+                st.markdown(f'<div class="om-task-desc">{icon("lock", 16)} Related document: '
+                            "restricted. Ask your admin for access.</div>", unsafe_allow_html=True)
+            elif path.exists():
                 st.download_button(
                     f"Open {task['document']}",
                     data=path.read_bytes(),
@@ -401,7 +406,7 @@ def assistant_chat() -> None:
             spot = st.empty()
             spot.markdown(THINKING_HTML, unsafe_allow_html=True)
             try:
-                answer, sources = ask(question)
+                answer, sources = ask(question, user, include_confidential=confidential_allowed(user))
                 log_question(user, question, answered=bool(sources), page="onboarding")
             except Exception:
                 answer, sources = f"**{AI_OFFLINE[0]}.** {AI_OFFLINE[1]}", []

@@ -13,6 +13,7 @@ PAGE_WORDS = {
     "pages/2_Helpdesk.py": "ticket it support problem help issue helpdesk",
     "pages/3_Onboarding.py": "onboarding checklist tasks new employee first week",
     "pages/4_Dashboard.py": "dashboard stats charts report excel export manager",
+    "pages/6_Security.py": "security activity log alerts users access lock unlock secure mode audit",
 }
 
 
@@ -50,8 +51,8 @@ def search(user: dict, query: str) -> dict:
     try:
         from modules.knowledge.assistant import list_documents, search_documents
 
-        results["documents"] = [name for name in list_documents() if _matches(query, name)]
-        results["passages"] = [p for p in search_documents(query, limit=3) if p["distance"] <= 0.5]
+        results["documents"] = [name for name in list_documents(user) if _matches(query, name)]
+        results["passages"] = [p for p in search_documents(query, user, limit=3) if p["distance"] <= 0.5]
         results["ai_ok"] = True
     except Exception:
         results["ai_ok"] = False

@@ -13,6 +13,26 @@ A professional, enterprise-style interface with OfficeMind's own logo (a deep-bl
 - Subtle motion only: page fade-in, hover effects and grey "skeleton" placeholders while things load.
 - Friendly empty states and plain-language error messages.
 
+## Security
+
+- **Access levels:** every document is Public, Department-only or Confidential. The AI only searches documents the signed-in person may see. Only admins upload, delete, change access or export.
+- **Sign-in:** strong passwords (10+ characters, letter, number, symbol); 5 wrong passwords lock the account for 15 minutes; automatic sign-out after 30 minutes without activity.
+- **Data protection:** phone numbers, emails, Aadhaar, PAN and bank numbers are shown as `****` in AI answers; ticket text, replies, AI questions, activity details, alerts and emails are encrypted in the database; prompt tricks ("ignore your rules…") are refused.
+- **Screen protection:** a watermark with the viewer's name, email and time; copy, right-click and printing are blocked; the page blurs when the window isn't active.
+- **Secure mode (optional, admin switch):** with the user's consent, the webcam and a YOLO model check that no phone is pointed at the screen while Confidential answers are allowed. Frames are checked on this computer and never saved.
+- **Monitoring:** an admin-only Security page with alerts, the activity log, users and settings.
+
+**Back up `data/secret.key`.** It's the encryption key; without it, encrypted data can't be read. It's never uploaded to GitHub.
+
+**Secure mode model:** `models/yolov8n.onnx` isn't on GitHub (12 MB, AGPL-3.0). To create it once, in a separate environment:
+```
+pip install ultralytics onnx onnxslim
+python -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='onnx', opset=12, simplify=True)"
+```
+Then copy `yolov8n.onnx` into the `models/` folder. OfficeMind runs it with onnxruntime (no PyTorch needed).
+
+**Limits:** these features make leaks harder and traceable. They can't stop a camera pointed at the screen, screen recorders, browser developer tools, or someone with access sharing content themselves. Uploaded PDF text in the search store (`data/chroma`) isn't encrypted, so protect the computer itself.
+
 ## What it does
 
 **Knowledge Assistant** (Phase 1, Step 1)

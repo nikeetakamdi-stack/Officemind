@@ -823,3 +823,49 @@ h1, h2, h3, h4 { color: var(--text); letter-spacing: -0.01em; }
   .om-login-brand { min-height: 0; }
   [data-testid="stChatMessageContent"] { max-width: 88%; }
 }
+
+/* =====================================================================
+   Security: screen protection
+   ===================================================================== */
+/* Watermark: faint diagonal name/email/time, repeated over the whole screen.
+   It sits above everything but lets clicks pass through. */
+.om-watermark { position: fixed; inset: 0; z-index: 1000020; background-repeat: repeat; pointer-events: none; }
+
+/* No selecting/copying page text (typing in boxes still works) */
+.stApp { -webkit-user-select: none; user-select: none; }
+.stApp input, .stApp textarea, .stApp [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+
+/* The helper that adds copy/print blocking takes no space */
+.st-key-om_shield { display: none; }
+[data-testid="stElementContainer"]:has(> .st-key-om_shield) { display: none; }
+
+/* Blur when OfficeMind isn't the active window */
+body.om-blurred [data-testid="stMain"],
+body.om-blurred [data-testid="stSidebar"],
+body.om-blurred .st-key-topbar { filter: blur(18px); }
+body.om-blurred::after {
+  content: "Content hidden while OfficeMind isn't the active window. Click here to continue.";
+  position: fixed; inset: 0; z-index: 1000030; display: grid; place-items: center; padding: 2rem;
+  background: rgba(16, 24, 40, 0.25); color: #FFFFFF; font-family: Inter, "Segoe UI", sans-serif;
+  font-size: 1.1rem; font-weight: 600; text-align: center; text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
+}
+
+/* Printing is disabled: the printout only shows this message */
+@media print {
+  body * { visibility: hidden !important; }
+  body::before {
+    content: "Printing is disabled in OfficeMind to protect company data.";
+    visibility: visible; position: fixed; top: 40%; right: 0; left: 0;
+    font: 600 20px Inter, "Segoe UI", sans-serif; text-align: center;
+  }
+}
+
+/* Secure mode panel and access badges */
+.om-consent { padding: 0.75rem 0.85rem; border: 1px solid var(--blue-border); border-radius: var(--radius-sm);
+  background: var(--blue-bg); color: var(--text); font-size: var(--fs-sm); line-height: 1.45; }
+.om-consent ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+.om-consent li { margin: 0.15rem 0; font-size: var(--fs-xs); }
+.om-access-public       { border-color: var(--green-border); background: var(--green-bg); color: var(--green-text); }
+.om-access-department   { border-color: var(--blue-border);  background: var(--blue-bg);  color: var(--blue-text); }
+.om-access-confidential { border-color: var(--red-border);   background: var(--red-bg);   color: var(--red-text); }
+[class*="st-key-doc_"] .om-badge { margin-top: 2px; }

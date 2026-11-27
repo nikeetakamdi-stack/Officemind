@@ -2,7 +2,8 @@
 
 import streamlit as st
 
-from core.auth import count_users, log_in, sign_up
+from core.auth import PASSWORD_RULES, attempt_login, count_users, sign_up
+from core.config import DEPARTMENTS, IDLE_TIMEOUT_MINUTES
 from core.ui import LOGO_PNG, apply_style, brand_html, current_user, icon
 
 st.set_page_config(page_title="Sign in · OfficeMind", page_icon=LOGO_PNG, layout="wide")
@@ -66,6 +67,9 @@ with form_column, st.container(key="auth_card"):
         '<p class="om-auth-sub">Sign in to your account, or create one.</p>',
         unsafe_allow_html=True,
     )
+    if st.query_params.get("reason") == "idle":
+        st.info(f"You were signed out after {IDLE_TIMEOUT_MINUTES} minutes without activity, "
+                "to keep company data safe. Please sign in again.", icon=":material/timer_off:")
     login_tab, signup_tab = st.tabs(["Sign in", "Create account"])
 
     with login_tab:
@@ -77,14 +81,11 @@ with form_column, st.container(key="auth_card"):
             )
         if log_in_clicked:
             with st.spinner("Checking..."):
-                user = log_in(username, password)
+                user, message = attempt_login(username, password)
             if user:
                 start_session(user)
             else:
-                st.error(
-                    "That username and password don't match. Check them and try again.",
-                    icon=":material/error:",
-                )
+                st.error(message, icon=":material/lock:" if "locked" in message else ":material/error:")
 
     with signup_tab:
         if count_users() == 0:
@@ -98,9 +99,12 @@ with form_column, st.container(key="auth_card"):
             new_username = st.text_input(
                 "Username", placeholder="e.g. priya.sharma", key="signup_username"
             )
+            email = st.text_input("Work email", placeholder="e.g. priya@company.com")
+            department = st.selectbox("Department", DEPARTMENTS)
             new_password = st.text_input(
-                "Password", type="password", help="At least 8 characters", key="signup_password"
+                "Password", type="password", help=PASSWORD_RULES, key="signup_password"
             )
+            st.caption(PASSWORD_RULES)
             confirm_password = st.text_input("Confirm password", type="password")
             sign_up_clicked = st.form_submit_button(
                 "Create account", type="primary", icon=":material/person_add:", width="stretch"
@@ -110,7 +114,7 @@ with form_column, st.container(key="auth_card"):
                 st.error("The two passwords don't match.", icon=":material/error:")
             else:
                 with st.spinner("Creating your account..."):
-                    user, error = sign_up(full_name, new_username, new_password)
+                    user, error = (None, "Please enter your work email.") if not email.strip() else sign_up(full_name, new_username, new_password, department, email)
                 if error:
                     st.error(error, icon=":material/error:")
                 else:

@@ -17,6 +17,7 @@ from core.config import (
 from core.llm import chat_json, embed
 from modules.helpdesk.tickets import URGENCIES, active_tickets, solved_tickets
 from modules.knowledge.assistant import search_documents
+from modules.security.masking import mask
 
 # nomic-embed-text compares best when the new text is a "query" and the old ones are "documents"
 QUERY_PREFIX = "search_query: "
@@ -87,7 +88,7 @@ def find_similar_open(new_vector: list[float], limit: int = 3) -> list[dict]:
     return matches[:limit]
 
 
-def suggest_fix(title: str, description: str, new_vector: list[float]) -> dict | None:
+def suggest_fix(title: str, description: str, new_vector: list[float], user: dict) -> dict | None:
     """A possible fix, based only on past solved tickets and the uploaded documents.
 
     Returns None if nothing relevant was found, otherwise
@@ -107,7 +108,7 @@ def suggest_fix(title: str, description: str, new_vector: list[float]) -> dict |
 
     # 2. Pieces of the uploaded documents that look like this problem
     pieces = [
-        p for p in search_documents(f"{title}. {description}", limit=3)
+        p for p in search_documents(f"{title}. {description}", user, limit=3)  # only documents this user may see
         if p["distance"] <= FIX_DOCUMENT_MAX_DISTANCE
     ]
 
@@ -127,10 +128,13 @@ def suggest_fix(title: str, description: str, new_vector: list[float]) -> dict |
     data = chat_json(FIX_PROMPT, f"KNOWN FIXES:\n{known_fixes}")
     steps = [str(step).strip() for step in data.get("steps", []) if str(step).strip()][:3]
 
+    # Hide personal data (phone numbers, emails, Aadhaar, PAN, bank accounts) before showing it
+    steps = [mask(step) for step in steps]
+    evidence = [{**e, "text": mask(e["text"])} for e in evidence]
     return {"steps": steps, "evidence": evidence}
 
 
-def analyze_ticket(title: str, description: str) -> dict:
+def analyze_ticket(title: str, description: str, user: dict) -> dict:
     """Run all three AI checks. Each part that fails is simply left out, so the
     employee can always still submit the ticket."""
     result = {
@@ -157,7 +161,7 @@ def analyze_ticket(title: str, description: str) -> dict:
         result["problems"].append(f"Couldn't check for similar tickets ({error}).")
 
     try:
-        result["fix"] = suggest_fix(title, description, new_vector)
+        result["fix"] = suggest_fix(title, description, new_vector, user)
     except Exception as error:
         result["problems"].append(f"Couldn't suggest a fix ({error}).")
 

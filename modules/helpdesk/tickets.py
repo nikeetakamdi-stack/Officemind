@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from core.config import TICKET_CATEGORIES
 from core.database import connect, create_tables
+from modules.security.crypto import decrypt, encrypt, is_encrypted
 
 # The three steps a ticket goes through. Saved in the database as the key,
 # shown on screen as the label.
@@ -71,6 +72,24 @@ def create_helpdesk_tables() -> None:
             )
             """
         )
+        # Security: encrypt ticket text saved before encryption existed (runs once per row)
+        for row in db.execute("SELECT id, title, description FROM tickets WHERE title NOT LIKE 'enc:v1:%' OR description NOT LIKE 'enc:v1:%'").fetchall():
+            if not is_encrypted(row["title"]) or not is_encrypted(row["description"]):
+                db.execute("UPDATE tickets SET title = ?, description = ? WHERE id = ?",
+                           (encrypt(row["title"]), encrypt(row["description"]), row["id"]))
+        for row in db.execute("SELECT id, message FROM ticket_replies WHERE message NOT LIKE 'enc:v1:%'").fetchall():
+            if not is_encrypted(row["message"]):
+                db.execute("UPDATE ticket_replies SET message = ? WHERE id = ?",
+                           (encrypt(row["message"]), row["id"]))
+
+
+def _decrypt_ticket(row) -> dict:
+    """A ticket row with its title and description readable again."""
+    ticket = dict(row)
+    for field in ("title", "description"):
+        if field in ticket:
+            ticket[field] = decrypt(ticket[field])
+    return ticket
 
 
 def _require_admin(user: dict) -> None:
@@ -123,7 +142,7 @@ def create_ticket(
             INSERT INTO tickets (user_id, title, description, category, urgency, ai_urgency)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (user["id"], title.strip(), description.strip(), category, urgency, ai_urgency),
+            (user["id"], encrypt(title.strip()), encrypt(description.strip()), category, urgency, ai_urgency),
         )
     return cursor.lastrowid, None
 
@@ -150,7 +169,7 @@ def list_tickets(user: dict) -> list[dict]:
                  tickets.id DESC
     """
     with connect() as db:
-        return [dict(row) for row in db.execute(query, params)]
+        return [_decrypt_ticket(row) for row in db.execute(query, params)]
 
 
 # ---------- For the helpdesk AI ----------
@@ -161,7 +180,7 @@ def active_tickets() -> list[dict]:
         rows = db.execute(
             "SELECT id, title, description, status FROM tickets WHERE status != 'closed'"
         )
-        return [dict(row) for row in rows]
+        return [_decrypt_ticket(row) for row in rows]
 
 
 def solved_tickets() -> list[dict]:
@@ -171,16 +190,23 @@ def solved_tickets() -> list[dict]:
     with connect() as db:
         rows = db.execute(
             """
-            SELECT tickets.id, tickets.title, tickets.description,
-                   GROUP_CONCAT(ticket_replies.message, ' / ') AS solution
+            SELECT tickets.id, tickets.title, tickets.description, ticket_replies.message
             FROM tickets
             JOIN ticket_replies ON ticket_replies.ticket_id = tickets.id
             JOIN users ON users.id = ticket_replies.user_id
             WHERE tickets.status = 'closed' AND users.role = 'admin'
-            GROUP BY tickets.id
+            ORDER BY tickets.id, ticket_replies.id
             """
-        )
-        return [dict(row) for row in rows]
+        ).fetchall()
+    # The replies are encrypted, so they're joined together here rather than in SQL
+    solved: dict[int, dict] = {}
+    for row in rows:
+        ticket = solved.setdefault(row["id"], {**_decrypt_ticket(row), "replies": []})
+        ticket["replies"].append(decrypt(row["message"]))
+    for ticket in solved.values():
+        ticket["solution"] = " / ".join(ticket.pop("replies"))
+        ticket.pop("message", None)
+    return list(solved.values())
 
 
 def list_replies(ticket_id: int) -> list[dict]:
@@ -196,7 +222,7 @@ def list_replies(ticket_id: int) -> list[dict]:
             """,
             (ticket_id,),
         )
-        return [dict(row) for row in rows]
+        return [{**dict(row), "message": decrypt(row["message"])} for row in rows]
 
 
 # ---------- Admins ----------
@@ -232,7 +258,7 @@ def add_reply(admin: dict, ticket_id: int, message: str) -> str | None:
     with connect() as db:
         db.execute(
             "INSERT INTO ticket_replies (ticket_id, user_id, message) VALUES (?, ?, ?)",
-            (ticket_id, admin["id"], message),
+            (ticket_id, admin["id"], encrypt(message)),
         )
         db.execute(
             "UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (ticket_id,)

@@ -33,6 +33,7 @@ NAV = [
     ("pages/2_Helpdesk.py", "Helpdesk", "support_agent", False),
     ("pages/3_Onboarding.py", "Onboarding", "task_alt", False),
     ("pages/4_Dashboard.py", "Dashboard", "monitoring", True),
+    ("pages/6_Security.py", "Security", "shield", True),
 ]
 
 
@@ -43,10 +44,27 @@ def current_user() -> dict | None:
 
 
 def require_login() -> dict:
-    """Send visitors who are not logged in to the login page."""
+    """Send visitors who are not signed in to the sign-in page, and sign people out
+    after IDLE_TIMEOUT_MINUTES without any activity."""
+    from core.auth import refresh_user
+    from core.config import IDLE_TIMEOUT_MINUTES
+    from modules.security.activity import log_activity
+
     user = current_user()
     if user is None:
         st.switch_page(LOGIN_PAGE)  # stops this page here
+
+    now = time.time()
+    last_active = st.session_state.get("last_active", now)
+    if now - last_active > IDLE_TIMEOUT_MINUTES * 60:
+        log_activity(user, "auto_logout", f"no activity for {IDLE_TIMEOUT_MINUTES} minutes")
+        st.session_state.clear()
+        st.switch_page(LOGIN_PAGE, query_params={"reason": "idle"})
+    st.session_state.last_active = now
+
+    # Read the account again, so changes by an admin (department, access) apply at once
+    user = refresh_user(user)
+    st.session_state.user = user
     return user
 
 
@@ -57,6 +75,8 @@ def is_admin() -> bool:
 
 def log_out() -> None:
     """Forget the user, their chats and settings, then go back to the login page."""
+    from modules.security.activity import log_activity
+    log_activity(current_user(), "logout")
     st.session_state.clear()
     st.switch_page(LOGIN_PAGE)
 
@@ -123,11 +143,24 @@ def page_setup(page: str, title: str, icon_name: str, subtitle: str = "", header
                        initial_sidebar_state="expanded")
     apply_style()
     user = require_login()  # not logged in? -> login page
+    _screen_protection(user)
     top_bar(user)
     sidebar_menu(user, page)
     if header:
         page_header(title, icon_name, subtitle)
     return user
+
+
+def _screen_protection(user: dict) -> None:
+    """Watermark, copy/print blocking, blur when inactive, and Secure mode (if it applies)."""
+    from modules.security.access import can_see_confidential
+    from modules.security.activity import secure_mode_enabled
+    from modules.security.screen import screen_shield, secure_mode_panel, watermark_html
+
+    st.markdown(watermark_html(user, is_dark()), unsafe_allow_html=True)
+    screen_shield()
+    if secure_mode_enabled() and can_see_confidential(user):
+        secure_mode_panel(user)
 
 
 def top_bar(user: dict) -> None:
@@ -175,20 +208,41 @@ def top_bar(user: dict) -> None:
                 )
                 st.divider()
                 st.toggle("Dark mode", value=is_dark(), key="dark_toggle", on_change=_toggle_theme)
+                with st.expander("Change password", icon=":material/key:"):
+                    _change_password_form(user)
                 if st.button("Log out", icon=":material/logout:", key="logout", width="stretch"):
                     log_out()
+
+
+def _change_password_form(user: dict) -> None:
+    from core.auth import PASSWORD_RULES, change_password
+    with st.form("change_password", clear_on_submit=True, border=False):
+        old = st.text_input("Current password", type="password")
+        new = st.text_input("New password", type="password", help=PASSWORD_RULES)
+        again = st.text_input("Repeat new password", type="password")
+        if st.form_submit_button("Update password", type="primary", width="stretch"):
+            if new != again:
+                st.error("The new passwords don't match.", icon=":material/error:")
+            else:
+                error = change_password(user, old, new)
+                if error:
+                    st.error(error, icon=":material/error:")
+                else:
+                    st.success("Password updated.", icon=":material/check_circle:")
 
 
 def sidebar_menu(user: dict, current: str) -> None:
     """The collapsible sidebar with an icon for each page. The current page is highlighted."""
     with st.sidebar:
         st.markdown('<div class="om-nav-label">Workspace</div>', unsafe_allow_html=True)
+        admin_label_shown = False
         for page, label, icon_name, admin_only in NAV:
             if admin_only:
                 if user["role"] != "admin":
                     continue
-                if page == NAV[-1][0]:
+                if not admin_label_shown:
                     st.markdown('<div class="om-nav-label">Admin</div>', unsafe_allow_html=True)
+                    admin_label_shown = True
             # The container's name says whether this is the current page; style.css highlights it
             active = "active" if page == current else ""
             with st.container(key=f"nav{active}_{icon_name}"):

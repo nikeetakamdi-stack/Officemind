@@ -6,6 +6,7 @@ import streamlit as st
 
 from core.ui import empty_state, heading, icon, page_setup, skeleton_html, status_badge
 from modules.search import search
+from modules.security.masking import mask
 
 query = st.query_params.get("q", "").strip()
 user = page_setup("pages/5_Search.py", "Search", "search",
@@ -71,7 +72,7 @@ if results["documents"] or results["passages"]:
     with st.container(key="panel_docs"):
         rows = [result("description", mark(name), "Uploaded document") for name in results["documents"]]
         rows += [result("format_quote", f'{html.escape(p["source"])} · page {p["page"]}',
-                        mark(p["text"][:220]) + "…") for p in results["passages"]]
+                        mark(mask(p["text"][:220])) + "…") for p in results["passages"]]
         st.markdown("".join(rows), unsafe_allow_html=True)
 
 if results["tasks"]:

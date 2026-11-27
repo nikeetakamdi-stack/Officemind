@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  OfficeMind Secure mode: webcam check for phones pointed at the screen.
+  A small live preview is always shown, so people can see when the camera is on.
+  One frame every ~1.5 s is sent to OfficeMind on this computer, checked in memory
+  by the YOLO model, and thrown away. Nothing is recorded or uploaded.
+  Talks to Streamlit with its standard component messages (no build step needed).
+-->
+<style>
+  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; font-size: 12px; color: #4A5361; background: transparent; }
+  .wrap { display: flex; gap: 10px; align-items: center; padding: 2px 0; }
+  video { width: 96px; height: 72px; flex: none; border-radius: 8px; object-fit: cover; background: #1F242B; transform: scaleX(-1); }
+  .dot { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: #17B26A; }
+  .alert .dot { background: #D92D20; }
+  .alert { color: #B42318; font-weight: 600; }
+  .error { color: #B42318; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <video id="video" autoplay muted playsinline></video>
+  <div id="status">Starting the camera…</div>
+</div>
+<canvas id="canvas" width="640" height="480" style="display:none"></canvas>
+<script>
+  const send = (type, data) => window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type }, data || {}), "*");
+  const setValue = value => send("streamlit:setComponentValue", { value, dataType: "json" });
+  const statusBox = document.getElementById("status");
+  let interval = 1500, started = false, frames = 0, stream = null, timer = null;
+
+  function showStatus(phone) {
+    if (!stream) return;
+    statusBox.className = phone ? "alert" : "";
+    statusBox.innerHTML = phone
+      ? '<span class="dot"></span>Phone detected: content hidden'
+      : '<span class="dot"></span>Camera on: no phone seen';
+  }
+
+  async function start() {
+    if (started) return;
+    started = true;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+      const video = document.getElementById("video");
+      video.srcObject = stream;
+      await video.play();
+      showStatus(false);
+      setValue({ status: "running", n: 0 });
+      const canvas = document.getElementById("canvas"), ctx = canvas.getContext("2d");
+      timer = setInterval(() => {
+        if (video.readyState >= 2) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          frames += 1;
+          setValue({ status: "running", n: frames, frame: canvas.toDataURL("image/jpeg", 0.6) });
+        }
+      }, interval);
+    } catch (e) {
+      statusBox.className = "error";
+      statusBox.textContent = "Camera not available (" + e.name + ").";
+      setValue({ status: "error", error: e.name + ": " + e.message });
+    }
+  }
+
+  window.addEventListener("message", event => {
+    if (event.data && event.data.type === "streamlit:render") {
+      const args = event.data.args || {};
+      if (args.interval) interval = args.interval;
+      showStatus(Boolean(args.phone));
+      start();
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    if (timer) clearInterval(timer);
+    if (stream) stream.getTracks().forEach(track => track.stop());
+  });
+  send("streamlit:componentReady", { apiVersion: 1 });
+  send("streamlit:setFrameHeight", { height: 80 });
+</script>
+</body>
+</html>

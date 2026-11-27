@@ -7,6 +7,7 @@ couldn't answer (so the admin knows which documents to add).
 import re
 
 from core.database import connect, create_tables
+from modules.security.crypto import encrypt, is_encrypted
 
 
 def create_question_table() -> None:
@@ -24,6 +25,11 @@ def create_question_table() -> None:
             )
             """
         )
+        # Security: encrypt questions saved before encryption existed
+        for row in db.execute("SELECT id, question FROM ai_questions WHERE question NOT LIKE 'enc:v1:%'").fetchall():
+            if not is_encrypted(row["question"]):
+                db.execute("UPDATE ai_questions SET question = ? WHERE id = ?",
+                           (encrypt(row["question"]), row["id"]))
 
 
 def normalize(question: str) -> str:
@@ -40,7 +46,7 @@ def log_question(user: dict | None, question: str, answered: bool, page: str) ->
         with connect() as db:
             db.execute(
                 "INSERT INTO ai_questions (user_id, question, answered, page) VALUES (?, ?, ?, ?)",
-                (user["id"] if user else None, question.strip()[:500], int(answered), page),
+                (user["id"] if user else None, encrypt(question.strip()[:500]), int(answered), page),
             )
     except Exception:
         pass

@@ -10,6 +10,8 @@ from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
 
+from modules.security.crypto import decrypt
+
 from core.config import TICKET_CATEGORIES
 from core.database import connect
 from modules.helpdesk.tickets import STATUSES, URGENCIES, create_helpdesk_tables
@@ -147,7 +149,7 @@ def _questions(days: int | None) -> list[dict]:
             f"SELECT question, answered, asked_at FROM ai_questions WHERE 1=1{where} ORDER BY id",
             params,
         )
-        return [dict(row) for row in rows]
+        return [{**dict(row), "question": decrypt(row["question"])} for row in rows]
 
 
 def _group(questions: list[dict]) -> list[dict]:
@@ -202,13 +204,18 @@ def _all_tickets(days: int | None) -> list[dict]:
         )
         tickets = [dict(row) for row in rows]
     for t in tickets:
+        t["Title"] = decrypt(t["Title"])
         t["Urgency"] = URGENCIES.get(t["Urgency"], t["Urgency"])
         t["Status"] = STATUSES.get(t["Status"], t["Status"])
     return tickets
 
 
 def excel_report(admin: dict, days: int | None, range_label: str) -> bytes:
-    """One Excel file with a sheet for each part of the dashboard."""
+    """One Excel file with a sheet for each part of the dashboard. Admins only."""
+    if admin.get("role") != "admin":
+        raise PermissionError("Only admins can export data.")
+    from modules.security.activity import log_activity
+    log_activity(admin, "export", f"Dashboard Excel · {range_label}")
     stats = ticket_stats(days)
     onboarding = onboarding_now(admin)
     asked, answered = question_count(days)

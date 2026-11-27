@@ -14,8 +14,17 @@ from core.ui import (
     sources_html,
     typing_effect,
 )
-from modules.knowledge.assistant import add_pdf, ask, delete_document, list_documents
+from core.config import DEPARTMENTS
+from modules.knowledge.assistant import (
+    add_pdf,
+    ask,
+    delete_document,
+    list_document_info,
+    set_document_access,
+)
 from modules.knowledge.question_log import log_question
+from modules.security.access import ACCESS_ICONS, ACCESS_LEVELS, can_open
+from modules.security.secure_mode import confidential_allowed
 
 user = page_setup(
     "pages/1_Knowledge_Assistant.py", "Knowledge Assistant", "menu_book",
@@ -30,20 +39,44 @@ def show_sources(sources):
         st.markdown(sources_html(sources), unsafe_allow_html=True)
 
 
+def access_badge(info: dict) -> str:
+    """Small badge: Public / Department-only (HR) / Confidential."""
+    label = ACCESS_LEVELS[info["access"]]
+    if info["access"] == "department" and info["department"]:
+        label = info["department"] + " only"
+    return (f'<span class="om-badge om-access-{info["access"]}">'
+            f'{icon(ACCESS_ICONS[info["access"]])}{html.escape(label)}</span>')
+
+
+def access_picker(key: str, current: str = "public", current_department: str | None = None):
+    """Access level (and department, for Department-only). Returns (access, department)."""
+    levels = list(ACCESS_LEVELS)
+    access = st.selectbox("Who can see it?", levels, index=levels.index(current),
+                          format_func=ACCESS_LEVELS.get, key=f"access_{key}")
+    department = None
+    if access == "department":
+        department = st.selectbox("Department", DEPARTMENTS, key=f"dept_{key}",
+                                  index=DEPARTMENTS.index(current_department)
+                                  if current_department in DEPARTMENTS else 0)
+    return access, department
+
+
 # ---------- Sidebar: documents ----------
 with st.sidebar:
-    # Upload: admins only. For employees this part is never built, so it can't be used.
+    # Upload: admins only. For employees this part is never built, so it can't be used,
+    # and add_pdf() itself refuses anyone who isn't an admin.
     if admin:
         section_title("Upload documents")
         files = st.file_uploader(
             "Choose PDF files", type="pdf", accept_multiple_files=True, label_visibility="collapsed"
         )
+        upload_access, upload_department = access_picker("upload")
         if st.button("Add to knowledge base", icon=":material/upload:", type="primary",
                      width="stretch", disabled=not files):
             for file in files:
                 with st.spinner(f"Reading {file.name}..."):
                     try:
-                        count = add_pdf(file, file.name)
+                        count = add_pdf(file, file.name, user, upload_access, upload_department)
                     except Exception as error:
                         friendly_error(f"Couldn't add {file.name}", AI_OFFLINE[1], str(error))
                         continue
@@ -59,26 +92,34 @@ with st.sidebar:
     if "deleted_message" in st.session_state:
         st.success(st.session_state.pop("deleted_message"), icon=":material/check_circle:")
 
-    documents = list_documents()
+    # Employees only see the documents they're allowed to see
+    documents = [d for d in list_document_info() if can_open(user, d["access"], d["department"])]
     if documents and not admin:
-        # Employees see the list, but without delete buttons
-        for name in documents:
-            safe_name = html.escape(name)
-            st.markdown(f'<div class="om-doc-row" title="{safe_name}">{icon("description", 16)} {safe_name}</div>',
-                        unsafe_allow_html=True)
+        for info in documents:
+            safe_name = html.escape(info["name"])
+            st.markdown(f'<div class="om-doc-row" title="{safe_name}">{icon("description", 16)} {safe_name}'
+                        f'<br>{access_badge(info)}</div>', unsafe_allow_html=True)
         st.caption("Only admins can add or remove documents.")
     elif documents:
-        for number, name in enumerate(documents):
+        for number, info in enumerate(documents):
+            name = info["name"]
             # The key gives this box a CSS class (st-key-doc_0, ...) so it looks like a card
             with st.container(key=f"doc_{number}"):
-                name_column, button_column = st.columns([5, 1], vertical_alignment="center")
+                name_column, menu_column, button_column = st.columns([5, 1, 1], vertical_alignment="center")
                 safe_name = html.escape(name)
-                name_column.markdown(f'<p title="{safe_name}">{icon("description", 16)} {safe_name}</p>',
-                                     unsafe_allow_html=True)
+                name_column.markdown(f'<p title="{safe_name}">{icon("description", 16)} {safe_name}</p>'
+                                     f'{access_badge(info)}', unsafe_allow_html=True)
+                # Change who can see it
+                with menu_column.popover("", icon=":material/shield:", help="Change who can see it"):
+                    new_access, new_department = access_picker(f"doc_{number}", info["access"], info["department"])
+                    if st.button("Save", key=f"save_access_{number}", type="primary"):
+                        set_document_access(user, name, new_access, new_department)
+                        st.session_state.deleted_message = f"Access for {name} updated"
+                        st.rerun()
                 # Each button needs its own key, so Streamlit can tell them apart
                 if button_column.button("", icon=":material/delete:", key=f"delete_{name}",
                                         help=f"Delete {name}", type="tertiary"):
-                    delete_document(name)
+                    delete_document(name, user)
                     st.session_state.deleted_message = f"Deleted {name}"
                     st.rerun()  # refresh the page so the list updates
     else:
@@ -136,7 +177,7 @@ if question:
         spot = st.empty()
         spot.markdown(THINKING_HTML, unsafe_allow_html=True)
         try:
-            answer, sources = ask(question)
+            answer, sources = ask(question, user, include_confidential=confidential_allowed(user))
             # Remember the question for the Dashboard (answered = it found sources)
             log_question(user, question, answered=bool(sources), page="knowledge")
         except Exception:

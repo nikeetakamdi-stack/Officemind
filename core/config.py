@@ -16,6 +16,21 @@ DATABASE_PATH = Path(os.environ.get("OFFICEMIND_DB", DATA_DIR / "officemind.db")
 # Onboarding: an employee counts as "stuck" after this many days without ticking a task
 ONBOARDING_STUCK_DAYS = 3
 
+# ---------- Security ----------
+DEPARTMENTS = ["General", "HR", "IT", "Finance", "Sales", "Operations"]
+PASSWORD_MIN_LENGTH = 10       # plus at least one letter, one number and one symbol
+LOCKOUT_ATTEMPTS = 5           # wrong passwords in a row before the account is locked
+LOCKOUT_MINUTES = 15
+IDLE_TIMEOUT_MINUTES = 30      # automatic sign-out after this long without activity
+# The encryption key lives in this file (or in the OFFICEMIND_KEY environment variable).
+# Back it up: without it, encrypted data can't be read.
+SECRET_KEY_PATH = DATA_DIR / "secret.key"
+PHONE_MIN_CONFIDENCE = 0.45    # Secure mode: how sure YOLO must be that it sees a phone
+YOLO_MODEL_PATH = PROJECT_ROOT / "models" / "yolov8n.onnx"
+# Alerts
+FAILED_LOGIN_ALERT = 3         # failed logins for one username within 15 minutes
+CONFIDENTIAL_PROBE_ALERT = 3   # questions touching confidential documents within 24 hours
+
 # Helpdesk settings
 TICKET_CATEGORIES = ["Network", "Software", "Hardware", "Access", "Other"]
 

@@ -30,3 +30,8 @@ Thumbs.db
 # User accounts database (has password hashes and names)
 *.db
 *.sqlite3
+
+# Secure mode YOLO model (12 MB, AGPL-3.0; see README for how to create it)
+models/*.onnx
+# Encryption key: never upload; keep a backup
+data/secret.key

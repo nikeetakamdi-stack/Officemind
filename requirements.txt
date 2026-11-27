@@ -4,3 +4,4 @@ pypdf>=5.0
 ollama>=0.4
 plotly>=5.20
 openpyxl>=3.1
+cryptography>=42

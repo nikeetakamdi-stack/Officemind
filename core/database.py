@@ -37,3 +37,15 @@ def create_tables() -> None:
             )
             """
         )
+        # Security module: extra columns, added to older databases automatically
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(users)")}
+        new_columns = {
+            "department": "TEXT NOT NULL DEFAULT 'General'",
+            "clearance": "INTEGER NOT NULL DEFAULT 0",       # 1 = may see Confidential documents
+            "email": "TEXT",                                  # encrypted
+            "failed_attempts": "INTEGER NOT NULL DEFAULT 0",
+            "locked_until": "TEXT",                           # UTC time, or NULL
+        }
+        for name, definition in new_columns.items():
+            if name not in columns:
+                db.execute(f"ALTER TABLE users ADD COLUMN {name} {definition}")

@@ -5,6 +5,7 @@ AI questions that are already in the database.
 """
 
 from core.database import connect
+from modules.security.crypto import decrypt
 from modules.helpdesk.tickets import create_helpdesk_tables
 from modules.knowledge.question_log import create_question_table
 from modules.onboarding.checklists import my_onboarding, progress_overview
@@ -39,7 +40,12 @@ def _admin(admin: dict) -> list[dict]:
         ).fetchone()[0]
     stuck = sum(r["status"] == "stuck" for r in progress_overview(admin))
 
+    from modules.security.activity import open_alert_count
+    alerts = open_alert_count()
     items = []
+    if alerts:
+        items.append({"icon": "notification_important",
+                      "text": f"{_plural(alerts, 'security alert')} to review", "page": "pages/6_Security.py"})
     if high:
         items.append({"icon": "priority_high", "text": f"{_plural(high, 'high-urgency ticket')} open", "page": HELPDESK})
     if waiting:
@@ -70,8 +76,10 @@ def _employee(user: dict) -> list[dict]:
             (user["id"],),
         ).fetchall()
 
-    items = [{"icon": "forum", "text": f"New reply on #{r['id']} {r['title']}", "page": HELPDESK} for r in replies]
-    items += [{"icon": "task_alt", "text": f"#{r['id']} {r['title']} was closed", "page": HELPDESK} for r in closed]
+    items = [{"icon": "forum", "text": f"New reply on #{r['id']} {decrypt(r['title'])}", "page": HELPDESK}
+             for r in replies]
+    items += [{"icon": "task_alt", "text": f"#{r['id']} {decrypt(r['title'])} was closed", "page": HELPDESK}
+              for r in closed]
     left = sum(a["total"] - a["done"] for a in my_onboarding(user))
     if left:
         items.append({"icon": "checklist", "text": f"{_plural(left, 'onboarding task')} left", "page": ONBOARDING})

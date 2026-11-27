@@ -195,7 +195,7 @@ def describe_step() -> None:
         spot = st.empty()  # grey "loading" card while the AI works
         spot.markdown(skeleton_html(lines=4, label="The AI is reading your ticket…"),
                       unsafe_allow_html=True)
-        analysis = analyze_ticket(title.strip(), description.strip())
+        analysis = analyze_ticket(title.strip(), description.strip(), user)
         spot.empty()
         st.session_state[DRAFT] = {
             "title": title.strip(),
